@@ -46,7 +46,7 @@ then
         VERSION="$OPTARG"
         ;;
       *)
-        echo -e "${r}Unexpected flag not supported${x}"
+        echo -e "Unexpected flag not supported"
         exit 1
         ;;
     esac
@@ -69,21 +69,21 @@ echo -e "
 
 if [[ -n "${CLI_ON_MACOS-}" ]]
 then
-  curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-macosx-$VERSION-universal.tgz
-  tar zxf aliyun-cli-macosx-$VERSION-universal.tgz
+  curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-macosx-"$VERSION"-universal.tgz
+  tar zxf aliyun-cli-macosx-"$VERSION"-universal.tgz
   mv ./aliyun /usr/local/bin/
 fi
 
 if [[ -n "${CLI_ON_LINUX-}" ]]
 then
   UNAME_MACHINE="$(/usr/bin/uname -m)"
-  if [[ "${UNAME_MACHINE}" == "arm64" ]]
+  if [[ "${UNAME_MACHINE}" == "arm64" || "${UNAME_MACHINE}" == "aarch64" ]]
   then
-    curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-linux-$VERSION-arm64.tgz
-    tar zxf aliyun-cli-linux-$VERSION-arm64.tgz
+    curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-linux-"$VERSION"-arm64.tgz
+    tar zxf aliyun-cli-linux-"$VERSION"-arm64.tgz
   else
-    curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-linux-$VERSION-amd64.tgz
-    tar zxf aliyun-cli-linux-$VERSION-amd64.tgz
+    curl -O -fsSL https://aliyuncli.alicdn.com/aliyun-cli-linux-"$VERSION"-amd64.tgz
+    tar zxf aliyun-cli-linux-"$VERSION"-amd64.tgz
   fi
   mv ./aliyun /usr/local/bin/
 fi

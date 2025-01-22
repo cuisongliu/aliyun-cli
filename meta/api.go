@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,19 +40,26 @@ func (a *Api) GetMethod() string {
 }
 
 func (a *Api) GetProtocol() string {
-	protocol := strings.ToLower(a.Protocol)
-	if strings.HasPrefix(protocol, "https") {
+	lowered := strings.ToLower(a.Protocol)
+
+	if strings.HasPrefix(lowered, "https") {
 		return "https"
-	} else {
-		return "http"
 	}
+
+	parts := strings.Split(lowered, "|")
+	for _, v := range parts {
+		if v == "https" {
+			return "https"
+		}
+	}
+
+	return "http"
 }
 
 func (a *Api) FindParameter(name string) *Parameter {
 	return findParameterInner(a.Parameters, name)
 }
 
-//
 // Foreach parameter use recursion
 func (a *Api) ForeachParameters(f func(s string, p Parameter)) {
 	foreachParameters(a.Parameters, "", f)
@@ -70,8 +77,6 @@ func foreachParameters(params []Parameter, prefix string, f func(s string, p Par
 	}
 }
 
-//
-//
 func findParameterInner(params []Parameter, name string) *Parameter {
 	for i, p := range params {
 		if p.Name == name {

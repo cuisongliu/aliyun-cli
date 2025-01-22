@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,11 @@
 // limitations under the License.
 package i18n
 
+import (
+	"os"
+	"strings"
+)
+
 type LanguageCode string
 
 const (
@@ -20,7 +25,16 @@ const (
 	En = LanguageCode("en")
 )
 
-var language = "en"
+func getLanguageFromEnv() string {
+	lang := os.Getenv("LANG")
+	if strings.HasPrefix(lang, "zh_CN") {
+		return "zh"
+	} else {
+		return "en"
+	}
+}
+
+var language = getLanguageFromEnv()
 
 func SetLanguage(lang string) {
 	language = lang

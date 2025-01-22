@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,10 +25,9 @@ func TestMigrateCredentials(t *testing.T) {
 	conf, err := MigrateCredentials("http://nicai")
 	assert.Empty(t, conf)
 	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, " parse failed: open http://nicai: The filename, directory name, or volume label syntax is incorrect.\n")
+		assert.EqualError(t, err, " parse failed: open http://nicai: The filename, directory name, or volume label syntax is incorrect.")
 	} else {
-		assert.EqualError(t, err, " parse failed: open http://nicai: no such file or directory\n")
-
+		assert.EqualError(t, err, " parse failed: open http://nicai: no such file or directory")
 	}
 
 	test, err := os.Create("test.ini")
@@ -68,14 +67,14 @@ func TestMigrateConfigure(t *testing.T) {
 		{Name: "aaa", Mode: AK, AccessKeyId: "sdf", AccessKeySecret: "ddf", OutputFormat: "json"}}}
 	err := MigrateConfigure("http://nici", conf)
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, "parse failed: open http://nici: The filename, directory name, or volume label syntax is incorrect.\n", err.Error())
+		assert.Equal(t, "parse failed: open http://nici: The filename, directory name, or volume label syntax is incorrect.", err.Error())
 	} else {
-		assert.Equal(t, "parse failed: open http://nici: no such file or directory\n", err.Error())
+		assert.Equal(t, "parse failed: open http://nici: no such file or directory", err.Error())
 	}
 
 	test, err := os.Create("testconf.ini")
 	assert.Nil(t, err)
-	_, err = test.WriteString(`
+	test.WriteString(`
 	[DEFAULT]
 	aliyun_access_key_id = DEFAULT_aliyun_access_key_id
 	aliyun_access_key_secret = DEFAULT_aliyun_access_key_secret

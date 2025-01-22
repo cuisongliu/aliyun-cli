@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ func NewConfigureListCommand() *cli.Command {
 		Usage: "list",
 		Short: i18n.T("list all config profile", "列出所有配置集"),
 		Run: func(c *cli.Context, args []string) error {
-			doConfigureList(c.Writer())
+			doConfigureList(c.Stdout())
 			return nil
 		},
 	}
@@ -73,6 +73,8 @@ func doConfigureList(w io.Writer) {
 			cred = "ProcessCommand:" + pf.ProcessCommand
 		case CredentialsURI:
 			cred = "CredentialsURI:" + pf.CredentialsURI
+		case OIDC:
+			cred = "OIDC:" + "***" + GetLastChars(pf.OIDCProviderARN, 5) + "@***" + GetLastChars(pf.OIDCTokenFile, 5) + "@" + pf.RamRoleArn
 		}
 		fmt.Fprintf(tw, "%s\t| %s\t| %s\t| %s\t| %s\n", name, cred, valid, pf.RegionId, pf.Language)
 	}

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,12 @@ import (
 )
 
 func (c *Command) PrintHead(ctx *Context) {
-	Printf(ctx.Writer(), "%s\n", c.Short.Text())
-	//if c.Long != nil {
-	//	fmt.Printf("\n%s\n", c.Long.Text())
-	//}
+	Printf(ctx.Stdout(), "%s\n", c.Short.Text())
 }
 
 func (c *Command) PrintUsage(ctx *Context) {
 	if c.Usage != "" {
-		Printf(ctx.Writer(), "\nUsage:\n  %s\n", c.GetUsageWithParent())
+		Printf(ctx.Stdout(), "\nUsage:\n  %s\n", c.GetUsageWithParent())
 	} else {
 		c.PrintSubCommands(ctx)
 	}
@@ -35,14 +32,14 @@ func (c *Command) PrintUsage(ctx *Context) {
 
 func (c *Command) PrintSample(ctx *Context) {
 	if c.Sample != "" {
-		Printf(ctx.Writer(), "\nSample:\n  %s\n", c.Sample)
+		Printf(ctx.Stdout(), "\nSample:\n  %s\n", c.Sample)
 	}
 }
 
 func (c *Command) PrintSubCommands(ctx *Context) {
 	if len(c.subCommands) > 0 {
-		Printf(ctx.Writer(), "\nCommands:\n")
-		w := tabwriter.NewWriter(ctx.Writer(), 8, 0, 1, ' ', 0)
+		Printf(ctx.Stdout(), "\nCommands:\n")
+		w := tabwriter.NewWriter(ctx.Stdout(), 8, 0, 1, ' ', 0)
 		for _, cmd := range c.subCommands {
 			if cmd.Hidden {
 				continue
@@ -57,8 +54,8 @@ func (c *Command) PrintFlags(ctx *Context) {
 	if len(c.Flags().Flags()) == 0 {
 		return
 	}
-	Printf(ctx.Writer(), "\nFlags:\n")
-	w := tabwriter.NewWriter(ctx.Writer(), 8, 0, 1, ' ', 0)
+	Printf(ctx.Stdout(), "\nFlags:\n")
+	w := tabwriter.NewWriter(ctx.Stdout(), 8, 0, 1, ' ', 0)
 	fs := c.Flags()
 	if ctx != nil {
 		fs = ctx.Flags()
@@ -82,5 +79,5 @@ func (c *Command) PrintFailed(ctx *Context, err error, suggestion string) {
 }
 
 func (c *Command) PrintTail(ctx *Context) {
-	Printf(ctx.Writer(), "\nUse `%s --help` for more information.\n", c.Name)
+	Printf(ctx.Stdout(), "\nUse `%s --help` for more information.\n", c.Name)
 }

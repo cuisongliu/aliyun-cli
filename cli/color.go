@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 )
 
 const (
@@ -99,45 +100,29 @@ const (
 	ErrorColor   = BRed
 )
 
-var (
-	withColor        = true
-	productListColor = ""
-	apiListColor     = ""
-)
-
-func EnableColor() {
-	withColor = true
+func isNoColor() bool {
+	var isTTY = os.FileMode(0)&os.ModeDevice != 0
+	var NO_COLOR = os.Getenv("NO_COLOR")
+	return isTTY || NO_COLOR == "true" || NO_COLOR == "1"
 }
 
-func DisableColor() {
-	withColor = false
-}
-
-func ProductListColor() string {
-	return productListColor
-}
-
-func APIListColor() string {
-	return apiListColor
-}
-
-func colorized(color string, a ...interface{}) string {
-	if withColor && color != "" {
+func Colorized(color string, a ...interface{}) string {
+	if !isNoColor() && color != "" {
 		return color + fmt.Sprint(a...) + ColorOff
 	}
 	return fmt.Sprint(a...)
 }
 
 func PrintWithColor(w io.Writer, color string, a ...interface{}) (n int, err error) {
-	return Print(w, colorized(color, a...))
+	return Print(w, Colorized(color, a...))
 }
 
 func Notice(w io.Writer, a ...interface{}) (n int, err error) {
-	return Print(w, colorized(NoticeColor, a...))
+	return Print(w, Colorized(NoticeColor, a...))
 }
 
 func Error(w io.Writer, a ...interface{}) (n int, err error) {
-	return Print(w, colorized(ErrorColor, a...))
+	return Print(w, Colorized(ErrorColor, a...))
 }
 
 func Noticef(w io.Writer, format string, args ...interface{}) (n int, err error) {

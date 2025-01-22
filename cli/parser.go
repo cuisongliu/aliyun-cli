@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,6 +56,10 @@ func (p *Parser) ReadNextArg() (arg string, more bool, err error) {
 
 func (p *Parser) GetRemains() []string {
 	return p.args[p.current:]
+}
+
+func (p *Parser) GetCurrent() int {
+	return p.current
 }
 
 func (p *Parser) ReadAll() ([]string, error) {
@@ -157,7 +161,7 @@ func (p *Parser) parseCommandArg(s string) (flag *Flag, value string, err error)
 	return
 }
 
-//SplitStringWithPrefix TODO can use function string.SplitN to replace
+// SplitStringWithPrefix TODO can use function string.SplitN to replace
 func SplitStringWithPrefix(s string, splitters string) (string, string, bool) {
 	i := strings.IndexAny(s, splitters)
 	if i < 0 {
@@ -165,15 +169,4 @@ func SplitStringWithPrefix(s string, splitters string) (string, string, bool) {
 	}
 	return s[:i], s[i+1:], true
 
-}
-
-func SplitString(s string, sep string) []string {
-	return strings.Split(s, sep)
-}
-
-func UnquoteString(s string) string {
-	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") && len(s) >= 2 {
-		return s[1 : len(s)-1]
-	}
-	return s
 }

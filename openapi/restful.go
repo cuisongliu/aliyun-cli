@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@ package openapi
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -46,10 +46,7 @@ func (a *RestfulInvoker) Prepare(ctx *cli.Context) error {
 	}
 
 	if v, ok := BodyFileFlag(ctx.Flags()).GetValue(); ok {
-		buf, err := ioutil.ReadFile(v)
-		if err != nil {
-			// fmt.Errorf("failed read file: %s %v", v, err)
-		}
+		buf, _ := os.ReadFile(v)
 		a.request.SetContent(buf)
 	}
 
@@ -66,6 +63,8 @@ func (a *RestfulInvoker) Prepare(ctx *cli.Context) error {
 		for _, f := range ctx.UnknownFlags().Flags() {
 			a.request.QueryParams[f.Name], _ = f.GetValue()
 		}
+		// default to https
+		a.request.Scheme = "https"
 	} else {
 		for _, f := range ctx.UnknownFlags().Flags() {
 			param := a.api.FindParameter(f.Name)
@@ -84,6 +83,12 @@ func (a *RestfulInvoker) Prepare(ctx *cli.Context) error {
 				return fmt.Errorf("unknown parameter position; %s is %s", param.Name, param.Position)
 			}
 		}
+
+		a.request.Scheme = a.api.GetProtocol()
+	}
+
+	if _, ok := InsecureFlag(ctx.Flags()).GetValue(); ok {
+		a.request.Scheme = "http"
 	}
 
 	if _, ok := SecureFlag(ctx.Flags()).GetValue(); ok {

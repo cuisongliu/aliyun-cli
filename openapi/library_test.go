@@ -15,23 +15,12 @@ package openapi
 
 import (
 	"github.com/aliyun/aliyun-cli/meta"
+	"github.com/aliyun/aliyun-cli/newmeta"
 	"github.com/stretchr/testify/assert"
 
 	"bytes"
-	"fmt"
 	"testing"
 )
-
-type reader_test struct {
-	content string
-}
-
-func (r *reader_test) ReadFrom(path string) ([]byte, error) {
-	if path == "" || r.content == "" {
-		return nil, fmt.Errorf("Please insert a valid path.")
-	}
-	return []byte(r.content), nil
-}
 
 func TestLibrary_PrintProducts(t *testing.T) {
 	w := new(bytes.Buffer)
@@ -42,13 +31,6 @@ func TestLibrary_PrintProducts(t *testing.T) {
 
 	products := library.GetProducts()
 	assert.NotNil(t, products)
-
-	product := meta.Product{
-		Code:    "ecs",
-		Version: "v1.0",
-		Name:    map[string]string{"zh": "test"},
-	}
-	library.printProduct(product)
 
 	library.builtinRepo.Products = []meta.Product{
 		{
@@ -61,16 +43,14 @@ func TestLibrary_PrintProducts(t *testing.T) {
 func TestLibrary_PrintProductUsage(t *testing.T) {
 	w := new(bytes.Buffer)
 	library := NewLibrary(w, "en")
-	content := `{"products":[{"code":"ecs","api_style":"rpc","apis":["DescribeRegions"]}]}`
-	library.builtinRepo = getRepository(content)
+	library.builtinRepo = getRepository()
 	err := library.PrintProductUsage("aos", true)
 	assert.Equal(t, "'aos' is not a valid command or product. See `aliyun help`.", err.Error())
 
 	err = library.PrintProductUsage("ecs", true)
 	assert.Nil(t, err)
 
-	content = `{"products":[{"code":"ecs","api_style":"restful","apis":["DescribeRegions"]}]}`
-	library.builtinRepo = getRepository(content)
+	library.builtinRepo = getRepository()
 	err = library.PrintProductUsage("ecs", true)
 	assert.Nil(t, err)
 }
@@ -78,16 +58,14 @@ func TestLibrary_PrintProductUsage(t *testing.T) {
 func TestLibrary_PrintApiUsage(t *testing.T) {
 	w := new(bytes.Buffer)
 	library := NewLibrary(w, "en")
-	content := `{"products":[{"code":"ecs","api_style":"rpc","apis":["DescribeRegions"]}]}`
-	library.builtinRepo = getRepository(content)
+	library.builtinRepo = getRepository()
 	err := library.PrintApiUsage("aos", "DescribeRegions")
 	assert.Equal(t, "'aos' is not a valid command or product. See `aliyun help`.", err.Error())
 
 	err = library.PrintApiUsage("ecs", "DescribeRegions")
 	assert.Nil(t, err)
 
-	content = `{"products":[{"code":"ecs","api_style":"restful","apis":["DescribeRegions"]}]}`
-	library.builtinRepo = getRepository(content)
+	library.builtinRepo = getRepository()
 	err = library.PrintApiUsage("ecs", "DescribeRegions")
 	assert.Nil(t, err)
 }
@@ -116,10 +94,10 @@ func Test_printParameters(t *testing.T) {
 			},
 		},
 	}
-	printParameters(w, params, "")
+	printParameters(w, params, "", &newmeta.APIDetail{})
 }
 
-func getRepository(content string) *meta.Repository {
+func getRepository() *meta.Repository {
 	repository := meta.LoadRepository()
 	return repository
 }

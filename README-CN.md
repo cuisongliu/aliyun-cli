@@ -4,7 +4,6 @@
 
 <p align="center">
 <a href="https://github.com/aliyun/aliyun-cli/actions/workflows/go.yml"><img src="https://github.com/aliyun/aliyun-cli/actions/workflows/go.yml/badge.svg" alt="Go build Status"></a>
-<a href="https://ci.appveyor.com/project/aliyun/aliyun-cli"><img src="https://ci.appveyor.com/api/projects/status/avxoqqcmgksbt3d8/branch/master?svg=true" alt="Appveyor Build Status"></a>
 <a href="https://codecov.io/gh/aliyun/aliyun-cli"><img src="https://codecov.io/gh/aliyun/aliyun-cli/branch/master/graph/badge.svg" alt="codecov"></a>
 <a href="https://github.com/aliyun/aliyun-cli/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aliyun/aliyun-cli.svg" alt="License"></a>
 <a href="https://goreportcard.com/report/github.com/aliyun/aliyun-cli"><img src="https://goreportcard.com/badge/github.com/aliyun/aliyun-cli" alt="Go Report" ></a>
@@ -19,7 +18,7 @@
 您也可以在安装 CLI 前在 Cloud Shell 进行试用：
 
 <a href="https://shell.aliyun.com/" target="cloudshell">
-  <img src="https://img.alicdn.com/tfs/TB1wt1zq9zqK1RjSZFpXXakSXXa-1066-166.png" width="180" />
+  <img src="https://img.alicdn.com/tfs/TB1wt1zq9zqK1RjSZFpXXakSXXa-1066-166.png" width="180" alt="cloudshell" />
 </a>
 
 ## 简介
@@ -28,11 +27,11 @@
 
 如果您在使用 CLI 的过程中遇到任何问题，请直接提交 Issues。
 
-**注意**：阿里云 CLI 使用 OpenAPI 方式访问云产品，确保您已经开通了要使用的云产品并了解该产品的 OpenAPI 的使用。您可以在[阿里云 OpenAPI 开发者门户](https://next.api.aliyun.com/)查看产品 API 文档，了解 API 的使用方式及参数列表。
+**注意**：阿里云 CLI 使用 OpenAPI 方式访问云产品，确保您已经开通了要使用的云产品并了解该产品的 OpenAPI 的使用。您可以在[阿里云 OpenAPI 开发者门户](https://api.aliyun.com/)查看产品 API 文档，了解 API 的使用方式及参数列表。
 
 ## 使用诊断
 
-[Troubleshoot](https://troubleshoot.api.aliyun.com/?source=github_sdk) 提供 OpenAPI 使用诊断服务，通过 `RequestID` 或 `报错信息` ，帮助开发者快速定位，为开发者提供解决方案。
+[Troubleshoot](https://api.aliyun.com/troubleshoot?source=github_sdk) 提供 OpenAPI 使用诊断服务，通过 `RequestID` 或 `报错信息` ，帮助开发者快速定位，为开发者提供解决方案。
 
 ## CLI Releases
 
@@ -44,7 +43,7 @@ CLI 版本更改说明请参考 [CHANGELOG](./CHANGELOG.md)
 
   阿里云 CLI 工具下载、解压后即可使用，支持 Mac、Linux(amd64/arm64)、Windows 平台(x64版本)。您可以将解压的`aliyun` 可执行文件移至 `/usr/local/bin` 目录下，或添加到 `$PATH` 中。
 
-  下载链接如下 (<img src="https://img.shields.io/github/release/aliyun/aliyun-cli.svg" alt="Latest Stable Version" />)：
+  下载链接如下 (![Latest Stable Version](https://img.shields.io/github/release/aliyun/aliyun-cli.svg))：
 
   - [Mac 图形界面安装器](https://aliyuncli.alicdn.com/aliyun-cli-latest.pkg)
   - [Mac Universal](https://aliyuncli.alicdn.com/aliyun-cli-macosx-latest-universal.tgz)
@@ -62,15 +61,23 @@ CLI 版本更改说明请参考 [CHANGELOG](./CHANGELOG.md)
   brew install aliyun-cli
   ```
 
-如果需要详细安装步骤或者编译安装步骤请访问官网文档 [安装 CLI](https://help.aliyun.com/document_detail/110343.html?spm=a2c4g.11186623.6.544.47ad1b18WHuF84)
+- **使用一键安装脚本**
+
+  你可以在 macOS 或 Linux 的命令行终端运行下面的命令：
+
+  ```sh
+  /bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
+  ```
+
+如果需要详细安装步骤或者编译安装步骤请访问官网文档 [安装 CLI](https://help.aliyun.com/document_detail/121988.html)
 
 ## 配置
 
-详细配置指引请访问官网 [配置 CLI](https://help.aliyun.com/document_detail/110341.html?spm=a2c4g.11186623.6.552.27f61b18o04a6s)
+详细配置指引请访问官网 [配置 CLI](https://help.aliyun.com/document_detail/110341.html)
 
 在使用阿里云 CLI 之前，您需要配置调用阿里云资源所需的凭证信息、地域、语言等。
 
-你可以运行 `aliyun configure` 命令进行快速配置
+你可以运行 `aliyun configure` 命令进行快速配置：
 
 ```sh
 $ aliyun configure
@@ -83,20 +90,47 @@ Default Language [zh|en] en:
 Saving profile[akProfile] ...Done.
 ```
 
-### 其他认证方式
+这将会以 AK 的认证模式对 default 进行凭证和其它配置。
 
-阿里云 CLI，可通过在`configure`命令后增加`--mode <authenticationMethod>`参数的方式来使用不同的认证方式，目前支持的认证方式如下：
+### 所有凭证模式
 
-| 验证方式   | 说明                                  |
-|------------|-------------------------------------|
-| AK         | 使用AccessKey ID/Secret访问          |
-| StsToken   | 使用STS Token访问                    |
-| RamRoleArn | 使用RAM子账号的AssumeRole方式访问      |
-| EcsRamRole | 在ECS实例上通过EcsRamRole实现免密验证   |
+可通过在 `configure` 命令后增加 `--mode <authenticationMethod>` 参数的方式来使用不同的凭证方式，目前支持的认证方式如下：
+
+| 凭证模式              | 说明                                    |
+|---------------------|-----------------------------------------|
+| AK                  | 使用直接的 AccessKey ID/Secret 访问凭证    |
+| RamRoleArn          | 使用 RAM 子账号角色扮演提供访问凭证          |
+| EcsRamRole          | 使用 ECS 实例角色提供访问凭证               |
+| OIDC                | 使用 OIDC 角色扮演的方式访问                |
+| External            | 使用外部进程提供访问凭证                    |
+| CredentialsURI      | 使用外部服务提供访问凭证                    |
+| ChainableRamRoleArn | 使用链式角色扮演的方式提供访问凭证            |
+
+如果在配置时不传递 `--mode`，将默认使用 AK 模式。
+
+### RAM 子账号角色扮演
+
+您可以使用 `--mode RamRoleArn` 指定通过 RAM 子账号进行角色扮演来获取凭证。它的底层是通过 AssumeRole 方法来换取
+临时凭证。示例如下：
+
+```shell
+$ aliyun configure --mode RamRoleArn --profile subaccount
+Configuring profile 'subaccount' in 'RamRoleArn' authenticate mode...
+Access Key Id []: AccessKey ID
+Access Key Secret []: AccessKey Secret
+Sts Region []: cn-hangzhou
+Ram Role Arn []: acs:ram::******:role/ecs-test
+Role Session Name []: sessionname
+Expired Seconds []: 900
+Default Region Id []: cn-hangzhou
+Default Output Format [json]: json (Only support json)
+Default Language [zh|en] en:
+Saving profile[subaccount] ...Done.
+```
 
 ### 使用外部程序获取凭证
 
-您可以使用 `--mode External` 指定通过外部程序获取凭证数据，CLI 将会以执行该程序命令并其返回作为凭证来发起调用。
+您可以使用 `--mode External` 指定通过外部程序获取凭证数据，CLI 将会以执行该程序命令并将其返回作为凭证来使用。
 
 约定：
 
@@ -106,7 +140,7 @@ Saving profile[akProfile] ...Done.
 
 关键字段:
 
-- mode: 指定返回凭证类型
+- mode: 指定返回凭证类型，目前支持两种静态的凭证。
 
 各凭证返回结构示例:
 
@@ -131,27 +165,6 @@ Saving profile[akProfile] ...Done.
 }
 ```
 
-- RamRoleArn
-
-```json
-{
-  "mode": "RamRoleArn",
-  "access_key_id": "accessKeyId",
-  "access_key_secret": "accessKeySecret",
-  "ram_role_arn": "ramRoleArn",
-  "ram_session_name": "ramSessionName"
-}
-```
-
-- EcsRamRole
-
-```json
-{
-  "mode": "EcsRamRole",
-  "ram_role_name": "ramRoleName"
-}
-```
-
 #### 示例
 
 ```shell
@@ -165,6 +178,8 @@ Saving profile[externalTest] ...Done.
 ```
 
 ### 使用链式 RamRoleArn
+
+通过 ChainableRamRoleArn ，可以指定一个前置凭证配置，然后再进行角色扮演。前置凭证的设置会更灵活，它可以是子账号的 AK，也可以是通过其它方式换取的 STS，比如 EcsRamRole。
 
 你可以使用 `--mode ChainableRamRoleArn` 来组合源配置和 RamRoleARN 的角色扮演流程。下面的例子从源配置中获取中间凭证，再基于中间凭证完成角色扮演，获取最终的凭证。
 
@@ -212,11 +227,28 @@ Saving profile[externalTest] ...Done.
   "AccessKeyId": "<ak id>",
   "AccessKeySecret": "<ak secret>",
   "SecurityToken": "<security token>",
-  "Expiration" "2006-01-02T15:04:05Z" // utc time
+  "Expiration": "2006-01-02T15:04:05Z" // utc time
 }
 ```
 
 其他情况，CLI 会当作失败案例处理。
+
+### 使用 OIDC 获取凭证
+
+你可以通过 `--mode OIDC` 来使用基于 OIDC 的 SSO 角色扮演获取凭证。示例如下：
+
+```shell
+$ aliyun configure --mode OIDC --profile oidc_p
+Configuring profile 'oidc_p' in 'OIDC' authenticate mode...
+OIDC Provider ARN []: xxxx
+OIDC Token File []: xxx
+RAM Role ARN []: xxx
+Role Session Name []: xxx
+Default Region Id []: xxx
+Default Output Format [json]: json (Only support json)
+Default Language [zh|en] en: 
+Saving profile[oidc_p] ...Done.
+```
 
 ### 启用 zsh/bash 自动补全
 
@@ -225,7 +257,7 @@ Saving profile[externalTest] ...Done.
 
 ## 使用阿里云 CLI
 
-这里是基础使用指引，如需要详细使用手册，请访问 [这里](https://help.aliyun.com/document_detail/110344.html?spm=a2c4g.11186623.6.558.339122a6nSODBj)。
+这里是基础使用指引，如需要详细使用手册，请访问 [这里](https://help.aliyun.com/document_detail/110344.html)。
 
 阿里云云产品的 OpenAPI 有 RPC 和 RESTful 两种风格，大部分产品使用的是 RPC 风格。不同风格的 API 的调用方法也不同。
 
@@ -391,18 +423,18 @@ aliyun ecs DescribeInstances --InstanceIds '["i-12345678912345678123"]' --waiter
 
 我们支持下面的环境变量：
 
-- `ALIBABACLOUD_PROFILE`/`ALIBABA_CLOUD_PROFILE`/`ALICLOUD_PROFILE`： 当 `--profile` 没有指定，CLI 将使用该环境变量。
-- `ALIBABACLOUD_IGNORE_PROFILE=TRUE`: 当这个变量被指定，CLI 忽略配置文件。
-- `ALIBABACLOUD_ACCESS_KEY_ID`/`ALICLOUD_ACCESS_KEY_ID`/`ACCESS_KEY_ID`： 当没有任何 Access Key Id 的指定，CLI 将使用该环境变量。
-- `ALIBABACLOUD_ACCESS_KEY_SECRET`/`ALICLOUD_ACCESS_KEY_SECRET`/`ACCESS_KEY_SECRET`： 当没有任何 Access Key Secret 的指定，CLI 将使用该环境变量。
-- `ALIBABACLOUD_SECURITY_TOKEN`/`ALICLOUD_SECURITY_TOKEN`/`SECURITY_TOKEN`： 当没有任何 Security Token 的指定，CLI 将使用该环境变量。
-- `ALIBABACLOUD_REGION_ID`/`ALICLOUD_REGION_ID`/`REGION`： 当没有任何 RegionId 的指定，CLI 将使用该环境变量。
+- `ALIBABA_CLOUD_PROFILE`： 当 `--profile` 没有指定，CLI 将使用该环境变量。
+- `ALIBABA_CLOUD_IGNORE_PROFILE=TRUE`: 当这个变量被指定，CLI 忽略配置文件。
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`： 当没有任何 Access Key Id 的指定，CLI 将使用该环境变量。
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`： 当没有任何 Access Key Secret 的指定，CLI 将使用该环境变量。
+- `ALIBABA_CLOUD_SECURITY_TOKEN`： 当没有任何 Security Token 的指定，CLI 将使用该环境变量。
+- `ALIBABA_CLOUD_REGION_ID`： 当没有任何 RegionId 的指定，CLI 将使用该环境变量。
 - `DEBUG=sdk`：通过该环境变量，CLI 将打印 HTTP 请求信息。这对于排查故障非常有用。
 
 ## 获取帮助
 
 我们使用 GitHub issues 追踪用户反馈的 bug 和功能请求。请访问以下站点获取帮助：
 
-- 基本使用方法请访问官网 [阿里云 CLI](https://help.aliyun.com/document_detail/110244.html?spm=a2c4g.11174283.6.542.553a474fAUytL0)
+- 基本使用方法请访问官网 [阿里云 CLI](https://help.aliyun.com/document_detail/110244.html)
 - 在 [Stack Overflow](https://stackoverflow.com/) 上提问并使用标签 [aliyun-cli](https://stackoverflow.com/questions/tagged/aliyun-cli)
 - 如果您发现了一个 BUG 或是希望新增一个特性，请[提交 issue](https://github.com/aliyun/aliyun-cli/issues/new/choose)。

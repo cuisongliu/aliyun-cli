@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,6 +41,8 @@ const (
 	ConfigurePathFlagName   = "config-path"
 	ExpiredSecondsFlagName  = "expired-seconds"
 	ProcessCommandFlagName  = "process-command"
+	OIDCProviderARNFlagName = "oidc-provider-arn"
+	OIDCTokenFileFlagName   = "oidc-token-file"
 )
 
 func AddFlags(fs *cli.FlagSet) {
@@ -65,6 +67,8 @@ func AddFlags(fs *cli.FlagSet) {
 	fs.Add(NewSkipSecureVerify())
 	fs.Add(NewExpiredSecondsFlag())
 	fs.Add(NewProcessCommandFlag())
+	fs.Add(NewOIDCProviderARNFlag())
+	fs.Add(NewOIDCTokenFileFlag())
 }
 
 func ConnectTimeoutFlag(fs *cli.FlagSet) *cli.Flag {
@@ -155,6 +159,14 @@ func ProcessCommandFlag(fs *cli.FlagSet) *cli.Flag {
 	return fs.Get(ProcessCommandFlagName)
 }
 
+func OIDCProviderARNFlag(fs *cli.FlagSet) *cli.Flag {
+	return fs.Get(OIDCProviderARNFlagName)
+}
+
+func OIDCTokenFileFlag(fs *cli.FlagSet) *cli.Flag {
+	return fs.Get(OIDCTokenFileFlagName)
+}
+
 func NewProfileFlag() *cli.Flag {
 	return &cli.Flag{
 		Category:     "config",
@@ -164,7 +176,8 @@ func NewProfileFlag() *cli.Flag {
 		Persistent:   true,
 		Short: i18n.T(
 			"use `--profile <profileName>` to select profile",
-			"使用 `--profile <profileName>` 指定操作的配置集")}
+			"使用 `--profile <profileName>` 指定操作的配置集"),
+	}
 }
 
 func NewModeFlag() *cli.Flag {
@@ -175,7 +188,8 @@ func NewModeFlag() *cli.Flag {
 		Persistent:   true,
 		Short: i18n.T(
 			"use `--mode {AK|StsToken|RamRoleArn|EcsRamRole|RsaKeyPair|RamRoleArnWithRoleName}` to assign authenticate mode",
-			"使用 `--mode {AK|StsToken|RamRoleArn|EcsRamRole|RsaKeyPair|RamRoleArnWithRoleName}` 指定认证方式")}
+			"使用 `--mode {AK|StsToken|RamRoleArn|EcsRamRole|RsaKeyPair|RamRoleArnWithRoleName}` 指定认证方式"),
+	}
 }
 
 func NewAccessKeyIdFlag() *cli.Flag {
@@ -185,7 +199,8 @@ func NewAccessKeyIdFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--access-key-id <AccessKeyId>` to assign AccessKeyId, required in AK/StsToken/RamRoleArn mode",
-			"使用 `--access-key-id <AccessKeyId>` 指定AccessKeyId")}
+			"使用 `--access-key-id <AccessKeyId>` 指定AccessKeyId"),
+	}
 }
 
 func NewAccessKeySecretFlag() *cli.Flag {
@@ -195,7 +210,8 @@ func NewAccessKeySecretFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--access-key-secret <AccessKeySecret>` to assign AccessKeySecret",
-			"使用 `--access-key-secret <AccessKeySecret>` 指定AccessKeySecret")}
+			"使用 `--access-key-secret <AccessKeySecret>` 指定AccessKeySecret"),
+	}
 }
 
 func NewStsTokenFlag() *cli.Flag {
@@ -205,7 +221,8 @@ func NewStsTokenFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--sts-token <StsToken>` to assign StsToken",
-			"使用 `--sts-token <StsToken>` 指定StsToken")}
+			"使用 `--sts-token <StsToken>` 指定StsToken"),
+	}
 }
 
 func NewStsRegionFlag() *cli.Flag {
@@ -215,7 +232,8 @@ func NewStsRegionFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--sts-region <StsRegion>` to assign StsRegion",
-			"使用 `--sts-region <StsRegion>` 指定StsRegion")}
+			"使用 `--sts-region <StsRegion>` 指定StsRegion"),
+	}
 }
 
 func NewRamRoleNameFlag() *cli.Flag {
@@ -226,7 +244,8 @@ func NewRamRoleNameFlag() *cli.Flag {
 		Persistent:   true,
 		Short: i18n.T(
 			"use `--ram-role-name <RamRoleName>` to assign RamRoleName",
-			"使用 `--ram-role-name <RamRoleName>` 指定RamRoleName")}
+			"使用 `--ram-role-name <RamRoleName>` 指定RamRoleName"),
+	}
 }
 
 func NewRamRoleArnFlag() *cli.Flag {
@@ -236,7 +255,8 @@ func NewRamRoleArnFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--ram-role-arn <RamRoleArn>` to assign RamRoleArn",
-			"使用 `--ram-role-arn <RamRoleArn>` 指定RamRoleArn")}
+			"使用 `--ram-role-arn <RamRoleArn>` 指定RamRoleArn"),
+	}
 }
 
 func NewRoleSessionNameFlag() *cli.Flag {
@@ -246,8 +266,10 @@ func NewRoleSessionNameFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--role-session-name <RoleSessionName>` to assign RoleSessionName",
-			"使用 `--role-session-name <RoleSessionName>` 指定RoleSessionName")}
+			"使用 `--role-session-name <RoleSessionName>` 指定RoleSessionName"),
+	}
 }
+
 func NewExpiredSecondsFlag() *cli.Flag {
 	return &cli.Flag{
 		Category:     "config",
@@ -255,8 +277,10 @@ func NewExpiredSecondsFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--expired-seconds <seconds>` to specify expiration time",
-			"使用 `--expired-seconds <seconds>` 指定凭证过期时间")}
+			"使用 `--expired-seconds <seconds>` 指定凭证过期时间"),
+	}
 }
+
 func NewPrivateKeyFlag() *cli.Flag {
 	return &cli.Flag{
 		Category:     "config",
@@ -264,7 +288,8 @@ func NewPrivateKeyFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--private-key <PrivateKey>` to assign RSA PrivateKey",
-			"使用 `--private-key <PrivateKey>` 指定RSA私钥")}
+			"使用 `--private-key <PrivateKey>` 指定RSA私钥"),
+	}
 }
 
 func NewKeyPairNameFlag() *cli.Flag {
@@ -274,7 +299,8 @@ func NewKeyPairNameFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--key-pair-name <KeyPairName>` to assign KeyPairName",
-			"使用 `--key-pair-name <KeyPairName>` 指定KeyPairName")}
+			"使用 `--key-pair-name <KeyPairName>` 指定KeyPairName"),
+	}
 }
 
 func NewProcessCommandFlag() *cli.Flag {
@@ -284,8 +310,29 @@ func NewProcessCommandFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--process-command <ProcessCommand>` to specify external program execution command",
-			"使用 `--process-command <ProcessCommand>` 指定外部程序运行命令",
-		),
+			"使用 `--process-command <ProcessCommand>` 指定外部程序运行命令"),
+	}
+}
+
+func NewOIDCProviderARNFlag() *cli.Flag {
+	return &cli.Flag{
+		Category:     "config",
+		Name:         OIDCProviderARNFlagName,
+		AssignedMode: cli.AssignedOnce,
+		Short: i18n.T(
+			"use `--oidc-provider-arn <OIDCProviderARN>` to assign OIDC provider ARN",
+			"使用 `--oidc-provider-arn <OIDCProviderARN>` 来指定 OIDC 提供者 ARN"),
+	}
+}
+
+func NewOIDCTokenFileFlag() *cli.Flag {
+	return &cli.Flag{
+		Category:     "config",
+		Name:         OIDCTokenFileFlagName,
+		AssignedMode: cli.AssignedOnce,
+		Short: i18n.T(
+			"use `--oidc-token-file <OIDCTokenFile>` to assign OIDC token file path",
+			"使用 `--oidc-token-file <OIDCTokenFile>` 来指定 OIDC Token 文件路径"),
 	}
 }
 
@@ -296,7 +343,8 @@ func NewRegionFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--region <regionId>` to assign region",
-			"使用 `--region <regionId>` 来指定访问大区")}
+			"使用 `--region <regionId>` 来指定访问大区"),
+	}
 }
 
 func NewRegionIdFlag() *cli.Flag {
@@ -315,8 +363,10 @@ func NewLanguageFlag() *cli.Flag {
 		AssignedMode: cli.AssignedOnce,
 		Short: i18n.T(
 			"use `--language [en|zh]` to assign language",
-			"使用 `--language [en|zh]` 来指定语言")}
+			"使用 `--language [en|zh]` 来指定语言"),
+	}
 }
+
 func NewConfigurePathFlag() *cli.Flag {
 	return &cli.Flag{
 		Category:     "config",
@@ -325,10 +375,10 @@ func NewConfigurePathFlag() *cli.Flag {
 		Persistent:   true,
 		Short: i18n.T(
 			"use `--config-path` to specify the configuration file path",
-			"使用 `--config-path` 指定配置文件路径",
-		),
+			"使用 `--config-path` 指定配置文件路径"),
 	}
 }
+
 func NewReadTimeoutFlag() *cli.Flag {
 	return &cli.Flag{
 		Category:     "caller",
@@ -371,7 +421,6 @@ func NewSkipSecureVerify() *cli.Flag {
 		Persistent:   true,
 		Short: i18n.T(
 			"use `--skip-secure-verify` to skip https certification validate [Not recommended]",
-			"使用 `--skip-secure-verify` 跳过https的证书校验 [不推荐使用]",
-		),
+			"使用 `--skip-secure-verify` 跳过https的证书校验 [不推荐使用]"),
 	}
 }

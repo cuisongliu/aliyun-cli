@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,60 +15,63 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestColor(t *testing.T) {
-	assert.True(t, withColor)
-	DisableColor()
-	assert.False(t, withColor)
-	EnableColor()
-	assert.True(t, withColor)
-	DisableColor()
-	assert.Empty(t, ProductListColor())
-	assert.Empty(t, APIListColor())
+	assert.False(t, isNoColor())
+	os.Setenv("NO_COLOR", "1")
+	assert.True(t, isNoColor())
+	os.Setenv("NO_COLOR", "true")
+	assert.True(t, isNoColor())
+	os.Setenv("NO_COLOR", "")
+	assert.False(t, isNoColor())
+}
 
-	assert.Equal(t, "a", colorized("", "a"))
-	EnableColor()
-	assert.Equal(t, "reda\033[0m", colorized("red", "a"))
+func TestColorized(t *testing.T) {
+	assert.Equal(t, "\x1b[0;31mtext\x1b[0m", Colorized(Red, "text"))
+	os.Setenv("NO_COLOR", "1")
+	assert.Equal(t, "text", Colorized(Red, "text"))
+	os.Setenv("NO_COLOR", "")
 }
 
 func TestCotainWriter(t *testing.T) {
-	w := new(bytes.Buffer)
-	n, err := PrintWithColor(w, "red", "a")
-	assert.Equal(t, "reda\033[0m", w.String())
+	writer := new(bytes.Buffer)
+	n, err := PrintWithColor(writer, "red", "a")
+	assert.Equal(t, "reda\033[0m", writer.String())
 	assert.Equal(t, 8, n)
 	assert.Nil(t, err)
 
-	w.Reset()
-	n, err = Notice(w, "a")
-	assert.Equal(t, "\033[1;33ma\x1b[0m", w.String())
+	writer.Reset()
+	n, err = Notice(writer, "a")
+	assert.Equal(t, "\033[1;33ma\x1b[0m", writer.String())
 	assert.Equal(t, 12, n)
 	assert.Nil(t, err)
 
-	w.Reset()
-	n, err = Error(w, "a")
-	assert.Equal(t, "\033[1;31ma\x1b[0m", w.String())
+	writer.Reset()
+	n, err = Error(writer, "a")
+	assert.Equal(t, "\033[1;31ma\x1b[0m", writer.String())
 	assert.Equal(t, 12, n)
 	assert.Nil(t, err)
 
-	w.Reset()
-	n, err = Noticef(w, "%s", "a")
-	assert.Equal(t, "\033[1;33ma\x1b[0m", w.String())
+	writer.Reset()
+	n, err = Noticef(writer, "%s", "a")
+	assert.Equal(t, "\033[1;33ma\x1b[0m", writer.String())
 	assert.Equal(t, 12, n)
 	assert.Nil(t, err)
 
-	w.Reset()
-	n, err = Errorf(w, "%s", "a")
-	assert.Equal(t, "\033[1;31ma\x1b[0m", w.String())
+	writer.Reset()
+	n, err = Errorf(writer, "%s", "a")
+	assert.Equal(t, "\033[1;31ma\x1b[0m", writer.String())
 	assert.Equal(t, 12, n)
 	assert.Nil(t, err)
 
-	w.Reset()
-	n, err = PrintfWithColor(w, "red", "%s", "a")
-	assert.Equal(t, "reda\033[0m", w.String())
+	writer.Reset()
+	n, err = PrintfWithColor(writer, "red", "%s", "a")
+	assert.Equal(t, "reda\033[0m", writer.String())
 	assert.Equal(t, 8, n)
 	assert.Nil(t, err)
 }

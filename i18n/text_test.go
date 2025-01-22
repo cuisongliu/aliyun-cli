@@ -33,3 +33,26 @@ func TestText(t *testing.T) {
 	language = "zh"
 	assert.Equal(t, "你好", tx.Text())
 }
+
+func TestGetData(t *testing.T) {
+	tx := T("hello", "你好")
+	expected := make(map[string]string)
+	expected["en"] = "hello"
+	expected["zh"] = "你好"
+	assert.Equal(t, expected, tx.GetData())
+}
+
+func TestLibrary(t *testing.T) {
+	//Test T(en string, zh string)*Text
+	text := T("hello", "你好")
+	assert.Equal(t, "hello", text.dic["en"])
+	assert.Equal(t, "你好", text.dic["zh"])
+
+	text = T("", "你好")
+	assert.Equal(t, "", text.dic["en"])
+	assert.Equal(t, "你好", text.dic["zh"])
+
+	text = T("hello", "")
+	assert.Equal(t, "hello", text.dic["en"])
+	assert.Equal(t, "", text.dic["zh"])
+}

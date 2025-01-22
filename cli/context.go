@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,7 +35,6 @@ func NewHelpFlag() *Flag {
 	}
 }
 
-//
 // CLI Command Context
 type Context struct {
 	help         bool
@@ -43,15 +42,15 @@ type Context struct {
 	unknownFlags *FlagSet
 	command      *Command
 	completion   *Completion
-	writer       io.Writer
+	stdout       io.Writer
 	stderr       io.Writer
 }
 
-func NewCommandContext(w io.Writer, stderr io.Writer) *Context {
+func NewCommandContext(stdout io.Writer, stderr io.Writer) *Context {
 	return &Context{
 		flags:        NewFlagSet(),
 		unknownFlags: nil,
-		writer:       w,
+		stdout:       stdout,
 		stderr:       stderr,
 	}
 }
@@ -76,8 +75,8 @@ func (ctx *Context) Flags() *FlagSet {
 	return ctx.flags
 }
 
-func (ctx *Context) Writer() io.Writer {
-	return ctx.writer
+func (ctx *Context) Stdout() io.Writer {
+	return ctx.stdout
 }
 
 func (ctx *Context) Stderr() io.Writer {
@@ -92,7 +91,6 @@ func (ctx *Context) SetCompletion(completion *Completion) {
 	ctx.completion = completion
 }
 
-//
 // Before go into the sub command, we need traverse flags and merge with parent
 func (ctx *Context) EnterCommand(cmd *Command) {
 	ctx.command = cmd
