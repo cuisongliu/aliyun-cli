@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -34,18 +33,19 @@ var hookSaveConfiguration = func(fn func(config *Configuration) error) func(conf
 	return fn
 }
 
+var stdin io.Reader = os.Stdin
+
 func loadConfiguration() (*Configuration, error) {
 	return hookLoadConfiguration(LoadConfiguration)(GetConfigPath() + "/" + configFile)
 }
 
 func NewConfigureCommand() *cli.Command {
-
 	c := &cli.Command{
 		Name: "configure",
 		Short: i18n.T(
 			"configure credential and settings",
 			"配置身份认证和其他信息"),
-		Usage: "configure --mode {AK|StsToken|RamRoleArn|EcsRamRole|RsaKeyPair|RamRoleArnWithRoleName|ChainableRamRoleArn} --profile <profileName>",
+		Usage: "configure --mode {AK|RamRoleArn|EcsRamRole|OIDC|External|CredentialsURI|ChainableRamRoleArn} --profile <profileName>",
 		Run: func(ctx *cli.Context, args []string) error {
 			if len(args) > 0 {
 				return cli.NewInvalidCommandError(args[0], ctx)
@@ -60,11 +60,12 @@ func NewConfigureCommand() *cli.Command {
 	c.AddSubCommand(NewConfigureSetCommand())
 	c.AddSubCommand(NewConfigureListCommand())
 	c.AddSubCommand(NewConfigureDeleteCommand())
+	c.AddSubCommand(NewConfigureSwitchCommand())
 	return c
 }
 
 func doConfigure(ctx *cli.Context, profileName string, mode string) error {
-	w := ctx.Writer()
+	w := ctx.Stdout()
 
 	conf, err := loadConfiguration()
 	if err != nil {
@@ -123,6 +124,9 @@ func doConfigure(ctx *cli.Context, profileName string, mode string) error {
 		case CredentialsURI:
 			cp.Mode = CredentialsURI
 			configureCredentialsURI(w, &cp)
+		case OIDC:
+			cp.Mode = OIDC
+			configureOIDC(w, &cp)
 		default:
 			return fmt.Errorf("unexcepted authenticate mode: %s", mode)
 		}
@@ -143,7 +147,7 @@ func doConfigure(ctx *cli.Context, profileName string, mode string) error {
 
 	cp.Language = ReadInput(cp.Language)
 	if cp.Language != "zh" && cp.Language != "en" {
-		cp.Language = "en"
+		cp.Language = i18n.GetLanguage()
 	}
 
 	//fmt.Printf("User site: [china|international|japan] %s", cp.Site)
@@ -246,7 +250,7 @@ func configureChainableRamRoleArn(w io.Writer, cp *Profile) error {
 func configureRsaKeyPair(w io.Writer, cp *Profile) error {
 	cli.Printf(w, "Rsa Private Key File: ")
 	keyFile := ReadInput("")
-	buf, err := ioutil.ReadFile(keyFile)
+	buf, err := os.ReadFile(keyFile)
 	if err != nil {
 		return fmt.Errorf("read key file %s failed %v", keyFile, err)
 	}
@@ -269,16 +273,29 @@ func configureCredentialsURI(w io.Writer, cp *Profile) error {
 	return nil
 }
 
+func configureOIDC(w io.Writer, cp *Profile) error {
+	cli.Printf(w, "OIDC Provider ARN [%s]: ", cp.OIDCProviderARN)
+	cp.OIDCProviderARN = ReadInput(cp.OIDCProviderARN)
+	cli.Printf(w, "OIDC Token File [%s]: ", cp.OIDCTokenFile)
+	cp.OIDCTokenFile = ReadInput(cp.OIDCTokenFile)
+	cli.Printf(w, "RAM Role ARN [%s]: ", cp.RamRoleArn)
+	cp.RamRoleArn = ReadInput(cp.RamRoleArn)
+	cli.Printf(w, "Role Session Name [%s]: ", cp.RoleSessionName)
+	cp.RoleSessionName = ReadInput(cp.RoleSessionName)
+	cp.ExpiredSeconds = 3600
+	return nil
+}
+
 func ReadInput(defaultValue string) string {
 	var s string
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(stdin)
 	if scanner.Scan() {
 		s = scanner.Text()
 	}
 	if s == "" {
 		return defaultValue
 	}
-	return s
+	return strings.TrimSpace(s)
 }
 
 func MosaicString(s string, lastChars int) string {

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,9 +52,7 @@ func (c *Commando) InitWithCommand(cmd *cli.Command) {
 	cmd.AutoComplete = c.complete
 }
 
-//
 func (c *Commando) main(ctx *cli.Context, args []string) error {
-	//
 	// aliyun
 	if len(args) == 0 {
 		c.printUsage(ctx)
@@ -74,7 +72,7 @@ func (c *Commando) main(ctx *cli.Context, args []string) error {
 	i18n.SetLanguage(c.profile.Language)
 
 	// process following commands:
-	// 	 aliyun <productCode>
+	//   aliyun <productCode>
 	//   aliyun <productCode> <method> --param1 value1
 	//   aliyun <productCode> GET <path>
 	productName := args[0]
@@ -114,6 +112,7 @@ func (c *Commando) main(ctx *cli.Context, args []string) error {
 }
 
 func (c *Commando) processInvoke(ctx *cli.Context, productCode string, apiOrMethod string, path string) error {
+
 	// create specific invoker
 	invoker, err := c.createInvoker(ctx, productCode, apiOrMethod, path)
 	if err != nil {
@@ -128,7 +127,7 @@ func (c *Commando) processInvoke(ctx *cli.Context, productCode string, apiOrMeth
 	if DryRunFlag(ctx.Flags()).IsAssigned() {
 		invoker.getRequest().TransToAcsRequest()
 		invoker.getClient().BuildRequestWithSigner(invoker.getRequest(), nil)
-		cli.Printf(ctx.Writer(), "Skip invoke in dry-run mode, request is:\n------------------------------------\n%s\n",
+		cli.Printf(ctx.Stdout(), "Skip invoke in dry-run mode, request is:\n------------------------------------\n%s\n",
 			invoker.getRequest().String())
 		return nil
 	}
@@ -167,7 +166,7 @@ func (c *Commando) processInvoke(ctx *cli.Context, productCode string, apiOrMeth
 
 	out = sortJSON(out)
 
-	cli.Println(ctx.Writer(), out)
+	cli.Println(ctx.Stdout(), out)
 	return nil
 }
 
@@ -210,7 +209,6 @@ func (c *Commando) invokeWithHelper(invoker Invoker) (resp string, err error, ok
 	return
 }
 
-//
 // create invoker for specific case
 // rpc: RpcInvoker, ForceRpcInvoker
 // restful: RestfulInvoker
@@ -240,6 +238,7 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 				}
 			}
 		}
+
 		if strings.ToLower(product.ApiStyle) == "rpc" {
 			//
 			// Rpc call
@@ -260,8 +259,8 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 				}, nil
 			}
 			return nil, &InvalidApiError{apiOrMethod, &product}
-
 		}
+
 		//
 		// Restful Call
 		// aliyun cs GET /clusters
@@ -270,10 +269,12 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 		if err != nil {
 			return nil, err
 		}
+
 		if !ok {
 			return nil, cli.NewErrorWithTip(fmt.Errorf("product '%s' need restful call", product.GetLowerCode()),
 				"Use `aliyun %s {GET|PUT|POST|DELETE} <path> ...`", product.GetLowerCode())
 		}
+
 		if api, ok := c.library.GetApi(product.Code, product.Version, ctx.Command().Name); ok {
 			return &RestfulInvoker{
 				basicInvoker,
@@ -283,6 +284,7 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 				&api,
 			}, nil
 		}
+
 		return &RestfulInvoker{
 			basicInvoker,
 			method,
@@ -290,7 +292,6 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 			force,
 			nil,
 		}, nil
-
 	} else {
 		if !force {
 			return nil, &InvalidProductError{Code: productCode, library: c.library}
@@ -322,25 +323,16 @@ func (c *Commando) createInvoker(ctx *cli.Context, productCode string, apiOrMeth
 				force,
 				nil,
 			}, nil
-			// return invoker, nil
-			// c.InvokeRestful(ctx, &product, method, path)
 		}
 		return &ForceRpcInvoker{
 			basicInvoker,
 			apiOrMethod,
 		}, nil
-		// c.InvokeRpcForce(ctx, &product, apiOrMethod)
-
 	}
 }
 
-//
 func (c *Commando) help(ctx *cli.Context, args []string) error {
 	cmd := ctx.Command()
-	//if err != nil {
-	//	cli.Errorf("ERROR: %s\n", err.Error())
-	//	printUsage(ctx.Command(), nil)
-	// } else {
 	if len(args) == 0 {
 		cmd.PrintHead(ctx)
 		cmd.PrintUsage(ctx)
@@ -352,19 +344,16 @@ func (c *Commando) help(ctx *cli.Context, args []string) error {
 	} else if len(args) == 1 {
 		cmd.PrintHead(ctx)
 		return c.library.PrintProductUsage(args[0], true)
-		// c.PrintFlags() TODO add later
 	} else if len(args) == 2 {
 		cmd.PrintHead(ctx)
 		return c.library.PrintApiUsage(args[0], args[1])
-		// c.PrintFlags() TODO add later
 	} else {
 		return fmt.Errorf("too many arguments: %d", len(args))
 	}
 }
 
-//
 func (c *Commando) complete(ctx *cli.Context, args []string) []string {
-	w := ctx.Writer()
+	w := ctx.Stdout()
 
 	r := make([]string, 0)
 	//
@@ -376,7 +365,7 @@ func (c *Commando) complete(ctx *cli.Context, args []string) []string {
 			if !strings.HasPrefix(p.GetLowerCode(), strings.ToLower(ctx.Completion().Current)) {
 				continue
 			}
-			cli.PrintfWithColor(w, cli.ProductListColor(), "%s\n", p.GetLowerCode())
+			cli.PrintfWithColor(w, "", "%s\n", p.GetLowerCode())
 		}
 		return r
 	}
@@ -392,7 +381,7 @@ func (c *Commando) complete(ctx *cli.Context, args []string) []string {
 				if !strings.HasPrefix(strings.ToLower(name), strings.ToLower(ctx.Completion().Current)) {
 					continue
 				}
-				cli.PrintfWithColor(w, cli.APIListColor(), "%s\n", name)
+				cli.PrintfWithColor(w, "", "%s\n", name)
 			}
 			return r
 		}
@@ -403,15 +392,15 @@ func (c *Commando) complete(ctx *cli.Context, args []string) []string {
 
 		api.ForeachParameters(func(s string, p meta.Parameter) {
 			if strings.HasPrefix("--"+strings.ToLower(s), strings.ToLower(ctx.Completion().Current)) && !p.Hidden {
-				cli.Printf(ctx.Writer(), "--%s\n", s)
+				cli.Printf(ctx.Stdout(), "--%s\n", s)
 			}
 		})
 	} else if product.ApiStyle == "restful" {
 		if len(args) == 1 {
-			cli.PrintfWithColor(w, cli.APIListColor(), "GET\n")
-			cli.PrintfWithColor(w, cli.APIListColor(), "POST\n")
-			cli.PrintfWithColor(w, cli.APIListColor(), "DELETE\n")
-			cli.PrintfWithColor(w, cli.APIListColor(), "PUT\n")
+			cli.PrintfWithColor(w, "", "GET\n")
+			cli.PrintfWithColor(w, "", "POST\n")
+			cli.PrintfWithColor(w, "", "DELETE\n")
+			cli.PrintfWithColor(w, "", "PUT\n")
 
 			return r
 		}
@@ -427,9 +416,5 @@ func (c *Commando) printUsage(ctx *cli.Context) {
 	cmd.PrintSubCommands(ctx)
 	cmd.PrintFlags(ctx)
 	cmd.PrintSample(ctx)
-	//if configError != nil {
-	//	cli.Printf("Configuration Invailed: %s\n", configError)
-	//	cli.Printf("Run `aliyun configure` first:\n  %s\n", configureCommand.Usage)
-	//}
 	cmd.PrintTail(ctx)
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,63 +15,64 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/aliyun-cli/cli"
-	jmespath "github.com/jmespath/go-jmespath"
+	"github.com/aliyun/aliyun-cli/i18n"
+	"github.com/aliyun/aliyun-cli/util"
+	credentialsv2 "github.com/aliyun/credentials-go/credentials"
 )
 
 type AuthenticateMode string
 
 const (
-	AK                  = AuthenticateMode("AK")
-	StsToken            = AuthenticateMode("StsToken")
-	RamRoleArn          = AuthenticateMode("RamRoleArn")
-	EcsRamRole          = AuthenticateMode("EcsRamRole")
-	RsaKeyPair          = AuthenticateMode("RsaKeyPair")
+	AK = AuthenticateMode("AK")
+	// Deprecated: StsToken is deprecated
+	StsToken   = AuthenticateMode("StsToken")
+	RamRoleArn = AuthenticateMode("RamRoleArn")
+	EcsRamRole = AuthenticateMode("EcsRamRole")
+	// Deprecated: RsaKeyPair is deprecated
+	RsaKeyPair = AuthenticateMode("RsaKeyPair")
+	// Deprecated: RamRoleArnWithRoleName is deprecated, use ChainableRamRoleArn instead of
 	RamRoleArnWithEcs   = AuthenticateMode("RamRoleArnWithRoleName")
 	ChainableRamRoleArn = AuthenticateMode("ChainableRamRoleArn")
 	External            = AuthenticateMode("External")
 	CredentialsURI      = AuthenticateMode("CredentialsURI")
+	OIDC                = AuthenticateMode("OIDC")
 )
 
 type Profile struct {
 	Name            string           `json:"name"`
 	Mode            AuthenticateMode `json:"mode"`
-	AccessKeyId     string           `json:"access_key_id"`
-	AccessKeySecret string           `json:"access_key_secret"`
-	StsToken        string           `json:"sts_token"`
-	StsRegion       string           `json:"sts_region"`
-	RamRoleName     string           `json:"ram_role_name"`
-	RamRoleArn      string           `json:"ram_role_arn"`
-	RoleSessionName string           `json:"ram_session_name"`
-	SourceProfile   string           `json:"source_profile"`
-	PrivateKey      string           `json:"private_key"`
-	KeyPairName     string           `json:"key_pair_name"`
-	ExpiredSeconds  int              `json:"expired_seconds"`
-	Verified        string           `json:"verified"`
-	RegionId        string           `json:"region_id"`
-	OutputFormat    string           `json:"output_format"`
-	Language        string           `json:"language"`
-	Site            string           `json:"site"`
-	ReadTimeout     int              `json:"retry_timeout"`
-	ConnectTimeout  int              `json:"connect_timeout"`
-	RetryCount      int              `json:"retry_count"`
-	ProcessCommand  string           `json:"process_command"`
-	CredentialsURI  string           `json:"credentials_uri"`
+	AccessKeyId     string           `json:"access_key_id,omitempty"`
+	AccessKeySecret string           `json:"access_key_secret,omitempty"`
+	StsToken        string           `json:"sts_token,omitempty"`
+	StsRegion       string           `json:"sts_region,omitempty"`
+	RamRoleName     string           `json:"ram_role_name,omitempty"`
+	RamRoleArn      string           `json:"ram_role_arn,omitempty"`
+	RoleSessionName string           `json:"ram_session_name,omitempty"`
+	SourceProfile   string           `json:"source_profile,omitempty"`
+	PrivateKey      string           `json:"private_key,omitempty"`
+	KeyPairName     string           `json:"key_pair_name,omitempty"`
+	ExpiredSeconds  int              `json:"expired_seconds,omitempty"`
+	Verified        string           `json:"verified,omitempty"`
+	RegionId        string           `json:"region_id,omitempty"`
+	OutputFormat    string           `json:"output_format,omitempty"`
+	Language        string           `json:"language,omitempty"`
+	Site            string           `json:"site,omitempty"`
+	ReadTimeout     int              `json:"retry_timeout,omitempty"`
+	ConnectTimeout  int              `json:"connect_timeout,omitempty"`
+	RetryCount      int              `json:"retry_count,omitempty"`
+	ProcessCommand  string           `json:"process_command,omitempty"`
+	CredentialsURI  string           `json:"credentials_uri,omitempty"`
+	OIDCProviderARN string           `json:"oidc_provider_arn,omitempty"`
+	OIDCTokenFile   string           `json:"oidc_token_file,omitempty"`
 	parent          *Configuration   //`json:"-"`
 }
 
@@ -80,7 +81,7 @@ func NewProfile(name string) Profile {
 		Name:         name,
 		Mode:         "",
 		OutputFormat: "json",
-		Language:     "en",
+		Language:     i18n.GetLanguage(),
 	}
 }
 
@@ -135,6 +136,19 @@ func (cp *Profile) Validate() error {
 		if cp.CredentialsURI == "" {
 			return fmt.Errorf("invalid credentials_uri")
 		}
+	case OIDC:
+		if cp.OIDCProviderARN == "" {
+			return fmt.Errorf("invalid oidc_provider_arn")
+		}
+		if cp.OIDCTokenFile == "" {
+			return fmt.Errorf("invalid oidc_token_file")
+		}
+		if cp.RamRoleArn == "" {
+			return fmt.Errorf("invalid ram_role_arn")
+		}
+		if cp.RoleSessionName == "" {
+			return fmt.Errorf("invalid role_session_name")
+		}
 	case ChainableRamRoleArn:
 		if cp.SourceProfile == "" {
 			return fmt.Errorf("invalid source_profile")
@@ -173,53 +187,39 @@ func (cp *Profile) OverwriteWithFlags(ctx *cli.Context) {
 	cp.RetryCount = RetryCountFlag(ctx.Flags()).GetIntegerOrDefault(cp.RetryCount)
 	cp.ExpiredSeconds = ExpiredSecondsFlag(ctx.Flags()).GetIntegerOrDefault(cp.ExpiredSeconds)
 	cp.ProcessCommand = ProcessCommandFlag(ctx.Flags()).GetStringOrDefault(cp.ProcessCommand)
+	cp.OIDCProviderARN = OIDCProviderARNFlag(ctx.Flags()).GetStringOrDefault(cp.OIDCProviderARN)
+	cp.OIDCTokenFile = OIDCTokenFileFlag(ctx.Flags()).GetStringOrDefault(cp.OIDCTokenFile)
 
 	if cp.AccessKeyId == "" {
-		switch {
-		case os.Getenv("ALIBABACLOUD_ACCESS_KEY_ID") != "":
-			cp.AccessKeyId = os.Getenv("ALIBABACLOUD_ACCESS_KEY_ID")
-		case os.Getenv("ALICLOUD_ACCESS_KEY_ID") != "":
-			cp.AccessKeyId = os.Getenv("ALICLOUD_ACCESS_KEY_ID")
-		case os.Getenv("ACCESS_KEY_ID") != "":
-			cp.AccessKeyId = os.Getenv("ACCESS_KEY_ID")
-		}
+		cp.AccessKeyId = util.GetFromEnv("ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABACLOUD_ACCESS_KEY_ID", "ALICLOUD_ACCESS_KEY_ID", "ACCESS_KEY_ID")
 	}
 
 	if cp.AccessKeySecret == "" {
-		switch {
-		case os.Getenv("ALIBABACLOUD_ACCESS_KEY_SECRET") != "":
-			cp.AccessKeySecret = os.Getenv("ALIBABACLOUD_ACCESS_KEY_SECRET")
-		case os.Getenv("ALICLOUD_ACCESS_KEY_SECRET") != "":
-			cp.AccessKeySecret = os.Getenv("ALICLOUD_ACCESS_KEY_SECRET")
-		case os.Getenv("ACCESS_KEY_SECRET") != "":
-			cp.AccessKeySecret = os.Getenv("ACCESS_KEY_SECRET")
-		}
+		cp.AccessKeySecret = util.GetFromEnv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABACLOUD_ACCESS_KEY_SECRET", "ALICLOUD_ACCESS_KEY_SECRET", "ACCESS_KEY_SECRET")
 	}
 
 	if cp.StsToken == "" {
-		switch {
-		case os.Getenv("ALIBABACLOUD_SECURITY_TOKEN") != "":
-			cp.StsToken = os.Getenv("ALIBABACLOUD_SECURITY_TOKEN")
-		case os.Getenv("ALICLOUD_SECURITY_TOKEN") != "":
-			cp.StsToken = os.Getenv("ALICLOUD_SECURITY_TOKEN")
-		case os.Getenv("SECURITY_TOKEN") != "":
-			cp.StsToken = os.Getenv("SECURITY_TOKEN")
-		}
+		cp.StsToken = util.GetFromEnv("ALIBABA_CLOUD_SECURITY_TOKEN", "ALIBABACLOUD_SECURITY_TOKEN", "ALICLOUD_SECURITY_TOKEN", "SECURITY_TOKEN")
 	}
 
 	if cp.RegionId == "" {
-		switch {
-		case os.Getenv("ALIBABACLOUD_REGION_ID") != "":
-			cp.RegionId = os.Getenv("ALIBABACLOUD_REGION_ID")
-		case os.Getenv("ALICLOUD_REGION_ID") != "":
-			cp.RegionId = os.Getenv("ALICLOUD_REGION_ID")
-		case os.Getenv("REGION") != "":
-			cp.RegionId = os.Getenv("REGION")
-		}
+		cp.RegionId = util.GetFromEnv("ALIBABA_CLOUD_REGION_ID", "ALIBABACLOUD_REGION_ID", "ALICLOUD_REGION_ID", "REGION_ID", "REGION")
 	}
 
 	if cp.CredentialsURI == "" {
 		cp.CredentialsURI = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
+	}
+
+	if cp.OIDCProviderARN == "" {
+		cp.OIDCProviderARN = util.GetFromEnv("ALIBABACLOUD_OIDC_PROVIDER_ARN", "ALIBABA_CLOUD_OIDC_PROVIDER_ARN")
+	}
+
+	if cp.OIDCTokenFile == "" {
+		cp.OIDCTokenFile = util.GetFromEnv("ALIBABACLOUD_OIDC_TOKEN_FILE", "ALIBABA_CLOUD_OIDC_TOKEN_FILE")
+	}
+
+	if cp.RamRoleArn == "" {
+		cp.RamRoleArn = util.GetFromEnv("ALIBABACLOUD_ROLE_ARN", "ALIBABA_CLOUD_ROLE_ARN")
 	}
 
 	AutoModeRecognition(cp)
@@ -242,6 +242,8 @@ func AutoModeRecognition(cp *Profile) {
 		cp.Mode = EcsRamRole
 	} else if cp.ProcessCommand != "" {
 		cp.Mode = External
+	} else if cp.OIDCProviderARN != "" && cp.OIDCTokenFile != "" && cp.RamRoleArn != "" {
+		cp.Mode = OIDC
 	}
 }
 
@@ -255,222 +257,211 @@ func (cp *Profile) ValidateAK() error {
 	return nil
 }
 
-func (cp *Profile) GetClient(ctx *cli.Context) (*sdk.Client, error) {
-	config := sdk.NewConfig()
-	// get UserAgent from env
-	config.UserAgent = os.Getenv("ALIYUN_USER_AGENT")
-
-	if cp.RetryCount > 0 {
-		// when use --retry-count, enable auto retry
-		config.WithAutoRetry(true)
-		config.WithMaxRetryTime(cp.RetryCount)
+func getSTSEndpoint(regionId string) string {
+	if regionId != "" {
+		return fmt.Sprintf("sts.%s.aliyuncs.com", regionId)
 	}
-	var client *sdk.Client
-	var err error
+	return "sts.aliyuncs.com"
+}
+
+func (cp *Profile) GetCredential(ctx *cli.Context, proxyHost *string) (cred credentialsv2.Credential, err error) {
+	config := new(credentialsv2.Config)
+	// The AK, StsToken are direct credential
+	// Others are indirect credential
+	cp.Validate()
 	switch cp.Mode {
 	case AK:
-		client, err = cp.GetClientByAK(config)
+		if cp.AccessKeyId == "" || cp.AccessKeySecret == "" {
+			err = fmt.Errorf("AccessKeyId/AccessKeySecret is empty! run `aliyun configure` first")
+			return
+		}
+
+		if cp.RegionId == "" {
+			err = fmt.Errorf("default RegionId is empty! run `aliyun configure` first")
+			return
+		}
+
+		config.SetType("access_key").
+			SetAccessKeyId(cp.AccessKeyId).
+			SetAccessKeySecret(cp.AccessKeySecret)
+
 	case StsToken:
-		client, err = cp.GetClientBySts(config)
+		config.SetType("sts").
+			SetAccessKeyId(cp.AccessKeyId).
+			SetAccessKeySecret(cp.AccessKeySecret).
+			SetSecurityToken(cp.StsToken)
+
 	case RamRoleArn:
-		client, err = cp.GetClientByRoleArn(config)
+		config.SetType("ram_role_arn").
+			SetAccessKeyId(cp.AccessKeyId).
+			SetAccessKeySecret(cp.AccessKeySecret).
+			SetRoleArn(cp.RamRoleArn).
+			SetRoleSessionName(cp.RoleSessionName).
+			SetRoleSessionExpiration(cp.ExpiredSeconds).
+			SetSTSEndpoint(getSTSEndpoint(cp.StsRegion))
+
+		if cp.StsToken != "" {
+			config.SetSecurityToken(cp.StsToken)
+		}
+
 	case EcsRamRole:
-		client, err = cp.GetClientByEcsRamRole(config)
+		config.SetType("ecs_ram_role").
+			SetRoleName(cp.RamRoleName)
+
 	case RsaKeyPair:
-		client, err = cp.GetClientByPrivateKey(config)
+		config.SetType("rsa_key_pair").
+			SetPrivateKeyFile(cp.PrivateKey).
+			SetPublicKeyId(cp.KeyPairName).
+			SetSessionExpiration(cp.ExpiredSeconds).
+			SetSTSEndpoint(getSTSEndpoint(cp.StsRegion))
+
 	case RamRoleArnWithEcs:
-		client, err = cp.GetClientByRamRoleArnWithEcs(config)
+		config.SetType("ecs_ram_role").
+			SetRoleName(cp.RamRoleName)
+		client, err := credentialsv2.NewCredential(config)
+		if err != nil {
+			return nil, err
+		}
+		// 从 ECS RAM Role 获取中间 STS
+		model, err := client.GetCredential()
+		if err != nil {
+			return nil, err
+		}
+
+		// 扮演最终角色
+		config.SetType("ram_role_arn").
+			SetAccessKeyId(*model.AccessKeyId).
+			SetAccessKeySecret(*model.AccessKeySecret).
+			SetSecurityToken(*model.SecurityToken).
+			SetRoleArn(cp.RamRoleArn).
+			SetRoleSessionName(cp.RoleSessionName).
+			SetRoleSessionExpiration(cp.ExpiredSeconds).
+			SetSTSEndpoint(getSTSEndpoint(cp.StsRegion))
+
 	case ChainableRamRoleArn:
-		return cp.GetClientByChainableRamRoleArn(config, ctx)
+		profileName := cp.SourceProfile
+
+		// 从 configuration 中重新获取 source profile
+		source, loaded := cp.parent.GetProfile(profileName)
+		if !loaded {
+			err = fmt.Errorf("can not load the source profile: " + profileName)
+			return
+		}
+
+		middle, err2 := source.GetCredential(ctx, proxyHost)
+		if err2 != nil {
+			err = err2
+			return
+		}
+
+		// 从上游处获得中间 AK/STS
+		model, err3 := middle.GetCredential()
+
+		if err3 != nil {
+			err = err3
+			return
+		}
+
+		// 扮演最终角色
+		config.SetType("ram_role_arn").
+			SetAccessKeyId(*model.AccessKeyId).
+			SetAccessKeySecret(*model.AccessKeySecret).
+			SetRoleArn(cp.RamRoleArn).
+			SetRoleSessionName(cp.RoleSessionName).
+			SetRoleSessionExpiration(cp.ExpiredSeconds).
+			SetSTSEndpoint(getSTSEndpoint(cp.StsRegion))
+
+		if model.SecurityToken != nil {
+			config.SetSecurityToken(*model.SecurityToken)
+		}
+
 	case External:
-		return cp.GetClientByExternal(config, ctx)
+		args := strings.Fields(cp.ProcessCommand)
+		cmd := exec.Command(args[0], args[1:]...)
+		buf, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, err
+		}
+		// 解析得到新的 profile 配置
+		err = json.Unmarshal(buf, cp)
+		if err != nil {
+			fmt.Println(cp.ProcessCommand)
+			fmt.Println(string(buf))
+			return nil, err
+		}
+		return cp.GetCredential(ctx, proxyHost)
+
 	case CredentialsURI:
-		return cp.GetClientByCredentialsURI(config, ctx)
+		uri := cp.CredentialsURI
+
+		if uri == "" {
+			uri = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
+		}
+
+		if uri == "" {
+			return nil, fmt.Errorf("invalid credentials uri")
+		}
+
+		res, err := http.Get(uri)
+		if err != nil {
+			return nil, err
+		}
+
+		if res.StatusCode != 200 {
+			return nil, fmt.Errorf("get credentials from %s failed, status code %d", uri, res.StatusCode)
+		}
+
+		body, err := io.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		type Response struct {
+			Code            string
+			AccessKeyId     string
+			AccessKeySecret string
+			SecurityToken   string
+			Expiration      string
+		}
+		var response Response
+		err = json.Unmarshal(body, &response)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshal credentials failed, the body %s", string(body))
+		}
+
+		if response.Code != "Success" {
+			return nil, fmt.Errorf("get sts token err, Code is not Success")
+		}
+
+		config.SetType("sts").
+			SetAccessKeyId(response.AccessKeyId).
+			SetAccessKeySecret(response.AccessKeySecret).
+			SetSecurityToken(response.SecurityToken)
+
+	case OIDC:
+		config.SetType("oidc_role_arn").
+			SetOIDCProviderArn(cp.OIDCProviderARN).
+			SetOIDCTokenFilePath(cp.OIDCTokenFile).
+			SetRoleArn(cp.RamRoleArn).
+			SetRoleSessionName(cp.RoleSessionName).
+			SetSTSEndpoint(getSTSEndpoint(cp.StsRegion)).
+			SetSessionExpiration(3600)
+
 	default:
-		client, err = nil, fmt.Errorf("unexcepted certificate mode: %s", cp.Mode)
+		return nil, fmt.Errorf("unexcepted certificate mode: %s", cp.Mode)
 	}
 
-	if client != nil {
-		if cp.ReadTimeout > 0 {
-			client.SetReadTimeout(time.Duration(cp.ReadTimeout) * time.Second)
-		}
-		if cp.ConnectTimeout > 0 {
-			client.SetConnectTimeout(time.Duration(cp.ConnectTimeout) * time.Second)
-		}
-		if SkipSecureVerify(ctx.Flags()).IsAssigned() {
-			client.SetHTTPSInsecure(true)
-		}
-	}
-	return client, err
-}
-
-func (cp *Profile) GetClientByAK(config *sdk.Config) (*sdk.Client, error) {
-	if cp.AccessKeyId == "" || cp.AccessKeySecret == "" {
-		return nil, fmt.Errorf("AccessKeyId/AccessKeySecret is empty! run `aliyun configure` first")
-	}
-	if cp.RegionId == "" {
-		return nil, fmt.Errorf("default RegionId is empty! run `aliyun configure` first")
-	}
-	cred := credentials.NewAccessKeyCredential(cp.AccessKeyId, cp.AccessKeySecret)
-	client, err := sdk.NewClientWithOptions(cp.RegionId, config, cred)
-	return client, err
-}
-
-func (cp *Profile) GetClientBySts(config *sdk.Config) (*sdk.Client, error) {
-	cred := credentials.NewStsTokenCredential(cp.AccessKeyId, cp.AccessKeySecret, cp.StsToken)
-	client, err := sdk.NewClientWithOptions(cp.RegionId, config, cred)
-	return client, err
-}
-
-func (cp *Profile) GetClientByRoleArn(config *sdk.Config) (*sdk.Client, error) {
-	cred := credentials.NewRamRoleArnCredential(cp.AccessKeyId, cp.AccessKeySecret, cp.RamRoleArn, cp.RoleSessionName, cp.ExpiredSeconds)
-	cred.StsRegion = cp.StsRegion
-	client, err := sdk.NewClientWithOptions(cp.RegionId, config, cred)
-	return client, err
-}
-
-func (cp *Profile) GetClientByRamRoleArnWithEcs(config *sdk.Config) (*sdk.Client, error) {
-	client, err := cp.GetClientByEcsRamRole(config)
-	if err != nil {
-		return nil, err
-	}
-	accessKeyID, accessKeySecret, StsToken, err := cp.GetSessionCredential(client)
-	if err != nil {
-		return nil, err
-	}
-	cred := credentials.NewStsTokenCredential(accessKeyID, accessKeySecret, StsToken)
-	return sdk.NewClientWithOptions(cp.RegionId, config, cred)
-}
-
-func (cp *Profile) GetSessionCredential(client *sdk.Client) (string, string, string, error) {
-	req := requests.NewCommonRequest()
-	rep := responses.NewCommonResponse()
-	req.Scheme = "HTTPS"
-	req.Product = "Sts"
-	req.RegionId = cp.RegionId
-	req.Version = "2015-04-01"
-	if cp.StsRegion != "" {
-		req.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", cp.StsRegion)
+	if proxyHost != nil {
+		config.SetProxy(*proxyHost)
 	} else {
-		req.Domain = "sts.aliyuncs.com"
-	}
-	req.ApiName = "AssumeRole"
-	req.QueryParams["RoleArn"] = cp.RamRoleArn
-	req.QueryParams["RoleSessionName"] = cp.RoleSessionName
-	req.QueryParams["DurationSeconds"] = strconv.Itoa(cp.ExpiredSeconds)
-	req.TransToAcsRequest()
-	err := client.DoAction(req, rep)
-	if err != nil {
-		return "", "", "", err
-	}
-	var v interface{}
-	err = json.Unmarshal(rep.GetHttpContentBytes(), &v)
-	if err != nil {
-		return "", "", "", err
-	}
-	accessKeyID, _ := jmespath.Search("Credentials.AccessKeyId", v)
-	accessKeySecret, _ := jmespath.Search("Credentials.AccessKeySecret", v)
-	StsToken, _ := jmespath.Search("Credentials.SecurityToken", v)
-	if accessKeyID == nil || accessKeySecret == nil || StsToken == nil {
-		return "", "", "", errors.New("get session credential failed")
-	}
-	return accessKeyID.(string), accessKeySecret.(string), StsToken.(string), nil
-}
-
-func (cp *Profile) GetClientByEcsRamRole(config *sdk.Config) (*sdk.Client, error) {
-	cred := credentials.NewEcsRamRoleCredential(cp.RamRoleName)
-	client, err := sdk.NewClientWithOptions(cp.RegionId, config, cred)
-	return client, err
-}
-
-func (cp *Profile) GetClientByPrivateKey(config *sdk.Config) (*sdk.Client, error) {
-	cred := credentials.NewRsaKeyPairCredential(cp.PrivateKey, cp.KeyPairName, cp.ExpiredSeconds)
-	client, err := sdk.NewClientWithOptions(cp.RegionId, config, cred)
-	return client, err
-}
-
-func (cp *Profile) GetClientByExternal(config *sdk.Config, ctx *cli.Context) (*sdk.Client, error) {
-	args := strings.Fields(cp.ProcessCommand)
-	cmd := exec.Command(args[0], args[1:]...)
-	buf, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(buf, cp)
-	if err != nil {
-		fmt.Println(cp.ProcessCommand)
-		fmt.Println(string(buf))
-		return nil, err
-	}
-	return cp.GetClient(ctx)
-}
-
-func (cp *Profile) GetClientByCredentialsURI(config *sdk.Config, ctx *cli.Context) (*sdk.Client, error) {
-	uri := cp.CredentialsURI
-
-	if uri == "" {
-		uri = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
+		proxy := util.GetFromEnv("HTTPS_PROXY", "https_proxy")
+		if proxy != "" {
+			config.SetProxy(proxy)
+		}
 	}
 
-	if uri == "" {
-		return nil, fmt.Errorf("invalid credentials uri")
-	}
-
-	res, err := http.Get(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("Get Credentials from %s failed, status code %d", uri, res.StatusCode)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	type Response struct {
-		Code            string
-		AccessKeyId     string
-		AccessKeySecret string
-		SecurityToken   string
-		Expiration      string
-	}
-	var response Response
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return nil, fmt.Errorf("Unmarshal credentials failed, the body %s", string(body))
-	}
-
-	if response.Code != "Success" {
-		return nil, fmt.Errorf("Get sts token err, Code is not Success")
-	}
-
-	cred := credentials.NewStsTokenCredential(response.AccessKeyId, response.AccessKeySecret, response.SecurityToken)
-	return sdk.NewClientWithOptions(cp.RegionId, config, cred)
-}
-
-func (cp *Profile) GetClientByChainableRamRoleArn(config *sdk.Config, ctx *cli.Context) (*sdk.Client, error) {
-	profileName := cp.SourceProfile
-
-	// 从 configuration 中重新获取 source profile
-	source, loaded := cp.parent.GetProfile(profileName)
-	if !loaded {
-		return nil, fmt.Errorf("can not load the source profile: " + profileName)
-	}
-
-	client, err := source.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accessKeyID, accessKeySecret, StsToken, err := cp.GetSessionCredential(client)
-	if err != nil {
-		return nil, err
-	}
-	cred := credentials.NewStsTokenCredential(accessKeyID, accessKeySecret, StsToken)
-	return sdk.NewClientWithOptions(cp.RegionId, config, cred)
+	return credentialsv2.NewCredential(config)
 }
 
 func IsRegion(region string) bool {

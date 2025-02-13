@@ -21,3 +21,7 @@ local-*
 coverage.txt
 oss/lib/ossutil_test*
 coverage.html
+coverage/
+integration/*.txt
+cli-metadata/
+__debug_bin*

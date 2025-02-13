@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 
 	"github.com/aliyun/aliyun-cli/cli"
+	"github.com/aliyun/aliyun-cli/util"
 )
 
 const (
@@ -70,15 +70,11 @@ func (c *Configuration) GetProfile(pn string) (Profile, bool) {
 func (c *Configuration) GetCurrentProfile(ctx *cli.Context) Profile {
 	profileName := ProfileFlag(ctx.Flags()).GetStringOrDefault(c.CurrentProfile)
 	if profileName == "" || profileName == "default" {
-		switch {
-		case os.Getenv("ALIBABACLOUD_PROFILE") != "":
-			profileName = os.Getenv("ALIBABACLOUD_PROFILE")
-		case os.Getenv("ALIBABA_CLOUD_PROFILE") != "":
-			profileName = os.Getenv("ALIBABA_CLOUD_PROFILE")
-		case os.Getenv("ALICLOUD_PROFILE") != "":
-			profileName = os.Getenv("ALICLOUD_PROFILE")
+		if v := util.GetFromEnv("ALIBABACLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE", "ALICLOUD_PROFILE"); v != "" {
+			profileName = v
 		}
 	}
+
 	p, _ := c.GetProfile(profileName)
 	p.OverwriteWithFlags(ctx)
 	return p
@@ -115,28 +111,39 @@ func LoadProfile(path string, name string) (Profile, error) {
 	return p, nil
 }
 
+func getConfigurePath(ctx *cli.Context) (currentPath string) {
+	if path, ok := ConfigurePathFlag(ctx.Flags()).GetValue(); ok {
+		currentPath = path
+	} else {
+		currentPath = GetConfigPath() + "/" + configFile
+	}
+	return
+}
+
+func getProfileName(ctx *cli.Context) (name string) {
+	if name, ok := ProfileFlag(ctx.Flags()).GetValue(); ok {
+		return name
+	} else if profileNameInEnv := util.GetFromEnv("ALIBABACLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE", "ALICLOUD_PROFILE"); profileNameInEnv != "" {
+		return profileNameInEnv
+	}
+
+	return ""
+}
+
 func LoadProfileWithContext(ctx *cli.Context) (profile Profile, err error) {
-	if os.Getenv("ALIBABACLOUD_IGNORE_PROFILE") == "TRUE" {
+	if util.GetFromEnv("ALIBABA_CLOUD_IGNORE_PROFILE", "ALIBABACLOUD_IGNORE_PROFILE") == "TRUE" {
 		profile = NewProfile("default")
 		profile.RegionId = "cn-hangzhou"
 	} else {
-		var currentPath string
-		if path, ok := ConfigurePathFlag(ctx.Flags()).GetValue(); ok {
-			currentPath = path
-		} else {
-			currentPath = GetConfigPath() + "/" + configFile
-		}
-		if name, ok := ProfileFlag(ctx.Flags()).GetValue(); ok {
-			profile, err = LoadProfile(currentPath, name)
-		} else {
-			profile, err = LoadProfile(currentPath, "")
-		}
+		currentPath := getConfigurePath(ctx)
+		profileName := getProfileName(ctx)
+		profile, err = LoadProfile(currentPath, profileName)
 		if err != nil {
 			return
 		}
 	}
 
-	//Load from flags
+	// Load from flags
 	profile.OverwriteWithFlags(ctx)
 	err = profile.Validate()
 	return
@@ -162,7 +169,7 @@ func LoadConfiguration(path string) (conf *Configuration, err error) {
 		return
 	}
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		err = fmt.Errorf("reading config from '%s' failed %v", path, err)
 		return
@@ -179,7 +186,7 @@ func SaveConfiguration(config *Configuration) (err error) {
 		return
 	}
 	path := GetConfigPath() + "/" + configFile
-	err = ioutil.WriteFile(path, bytes, 0600)
+	err = os.WriteFile(path, bytes, 0600)
 	return
 }
 

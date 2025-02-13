@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ func NewConfigureSetCommand() *cli.Command {
 			"使用非交互式方式进行配置"),
 		Usage: "set [--profile <profileName>] [--language {en|zh}] ...",
 		Run: func(c *cli.Context, args []string) error {
-			doConfigureSet(c.Writer(), c.Flags())
+			doConfigureSet(c.Stdout(), c.Flags())
 			return nil
 		},
 	}
@@ -104,7 +104,14 @@ func doConfigureSet(w io.Writer, flags *cli.FlagSet) {
 		profile.KeyPairName = KeyPairNameFlag(flags).GetStringOrDefault(profile.KeyPairName)
 	case External:
 		profile.ProcessCommand = ProcessCommandFlag(flags).GetStringOrDefault(profile.ProcessCommand)
+	case OIDC:
+		profile.OIDCProviderARN = OIDCProviderARNFlag(flags).GetStringOrDefault(profile.OIDCProviderARN)
+		profile.OIDCTokenFile = OIDCTokenFileFlag(flags).GetStringOrDefault(profile.OIDCTokenFile)
+		profile.RamRoleArn = RamRoleArnFlag(flags).GetStringOrDefault(profile.RamRoleArn)
+		profile.RoleSessionName = RoleSessionNameFlag(flags).GetStringOrDefault(profile.RoleSessionName)
+		profile.ExpiredSeconds = ExpiredSecondsFlag(flags).GetIntegerOrDefault(profile.ExpiredSeconds)
 	}
+
 	profile.RegionId = RegionFlag(flags).GetStringOrDefault(profile.RegionId)
 	profile.Language = LanguageFlag(flags).GetStringOrDefault(profile.Language)
 	profile.OutputFormat = "json" // "output", profile.OutputFormat)
@@ -112,6 +119,7 @@ func doConfigureSet(w io.Writer, flags *cli.FlagSet) {
 	profile.ReadTimeout = ReadTimeoutFlag(flags).GetIntegerOrDefault(profile.ReadTimeout)
 	profile.ConnectTimeout = ConnectTimeoutFlag(flags).GetIntegerOrDefault(profile.ConnectTimeout)
 	profile.RetryCount = RetryCountFlag(flags).GetIntegerOrDefault(profile.RetryCount)
+	profile.StsRegion = StsRegionFlag(flags).GetStringOrDefault(profile.StsRegion)
 
 	err = profile.Validate()
 	if err != nil {

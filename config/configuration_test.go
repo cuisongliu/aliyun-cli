@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -223,7 +223,6 @@ func TestSaveConfiguration(t *testing.T) {
 	n, _ := file.Read(buf)
 	file.Close()
 	assert.Equal(t, string(bytes), string(buf[:n]))
-
 }
 
 func TestLoadConfiguration(t *testing.T) {
@@ -278,5 +277,70 @@ func TestLoadProfileWithContext(t *testing.T) {
 	ctx.Flags().Get("profile").SetAssigned(true)
 	_, err = LoadProfileWithContext(ctx)
 	assert.EqualError(t, err, "region can't be empty")
+}
 
+func TestLoadProfileWithContextWhenIGNORE_PROFILE(t *testing.T) {
+	os.Setenv("ALIBABA_CLOUD_IGNORE_PROFILE", "TRUE")
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	ctx := cli.NewCommandContext(stdout, stderr)
+	AddFlags(ctx.Flags())
+	ctx.Flags().Get("access-key-id").SetAssigned(true)
+	ctx.Flags().Get("access-key-id").SetValue("test-ak-id")
+	ctx.Flags().Get("access-key-secret").SetAssigned(true)
+	ctx.Flags().Get("access-key-secret").SetValue("test-ak-secret")
+	p, err := LoadProfileWithContext(ctx)
+	assert.Nil(t, err)
+	assert.Equal(t, "default", p.Name)
+	assert.Equal(t, "cn-hangzhou", p.RegionId)
+	assert.Equal(t, AK, p.Mode)
+	// reset
+	os.Setenv("ALIBABA_CLOUD_IGNORE_PROFILE", "")
+}
+
+func TestGetHomePath(t *testing.T) {
+	home := GetHomePath()
+	assert.NotEqual(t, "", home)
+}
+
+func TestGetProfileName(t *testing.T) {
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	ctx := cli.NewCommandContext(stdout, stderr)
+	AddFlags(ctx.Flags())
+	// default case: no flag, no env
+	name := getProfileName(ctx)
+	assert.Equal(t, name, "")
+
+	// case 1: with flag
+	ctx.Flags().Get("profile").SetAssigned(true)
+	ctx.Flags().Get("profile").SetValue("FromProfileFlag")
+	name = getProfileName(ctx)
+	assert.Equal(t, name, "FromProfileFlag")
+
+	// case 2: with env
+	ctx.Flags().Get("profile").SetAssigned(false)
+	ctx.Flags().Get("profile").SetValue("")
+	name = getProfileName(ctx)
+	assert.Equal(t, name, "") // reset flag
+	os.Setenv("ALIBABA_CLOUD_PROFILE", "profileName")
+	name = getProfileName(ctx)
+	assert.Equal(t, name, "profileName")
+	os.Setenv("ALIBABA_CLOUD_PROFILE", "") // reset env
+}
+
+func TestGetConfigurePath(t *testing.T) {
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	ctx := cli.NewCommandContext(stdout, stderr)
+	AddFlags(ctx.Flags())
+	// default case: no flag, no env
+	p := getConfigurePath(ctx)
+	assert.Contains(t, p, ".aliyun/config.json")
+
+	// case 1: with flag
+	ctx.Flags().Get("config-path").SetAssigned(true)
+	ctx.Flags().Get("config-path").SetValue("/path/to/config.json")
+	p = getConfigurePath(ctx)
+	assert.Equal(t, p, "/path/to/config.json")
 }

@@ -9,26 +9,39 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
-    env:
-      ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
-      ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
-      REGION_ID: ${{ secrets.REGION_ID }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+    runs-on: ${{ matrix.os }}
+    environment: CI
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v5
       with:
         go-version: "1.20"
 
     - name: Unit Test
       run: make test
+    - name: Upload coverage infomartion
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Smoking Test
       run: go run ./main/main.go
-    - run:  make build
-    - run: test -z $ACCESS_KEY_ID -a -z $ACCESS_KEY_SECRET || bash ./integration/ecs_test
-    - run: bash <(curl -s https://codecov.io/bash)
+
+    - run: |
+        make build
+        make install
+        bash ./integration/vpc_test.sh
+        bash ./integration/oss_test.sh
+        bash ./integration/https_proxy.sh
+      if: env.ACCESS_KEY_ID != '' && env.ACCESS_KEY_SECRET != '' && matrix.os != 'windows-latest'
+      env:
+        ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+        ACCESS_KEY_SECRET: ${{ secrets.ACCESS_KEY_SECRET }}
+        REGION_ID: ${{ secrets.REGION_ID }}

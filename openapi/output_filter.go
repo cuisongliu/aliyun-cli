@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -76,7 +78,7 @@ func (a *TableOutputFilter) FilterOutput(s string) (string, error) {
 		return s, fmt.Errorf("unmarshal output failed %s", err)
 	}
 
-	rowPath := detectArrayPath(v)
+	var rowPath string
 	if v, ok := OutputFlag(a.ctx.Flags()).GetFieldValue("rows"); ok {
 		rowPath = "RootFilter[0]." + v
 	} else {
@@ -85,13 +87,18 @@ func (a *TableOutputFilter) FilterOutput(s string) (string, error) {
 
 	var colNames []string
 	if v, ok := OutputFlag(a.ctx.Flags()).GetFieldValue("cols"); ok {
-		v = cli.UnquoteString(v)
+		v = UnquoteString(v)
 		colNames = strings.Split(v, ",")
 	} else {
 		return s, fmt.Errorf("you need to assign col=col1,col2,... with --output")
 	}
 
 	return a.FormatTable(rowPath, colNames, v)
+}
+
+func isArrayOrSlice(value interface{}) bool {
+	v := reflect.ValueOf(value)
+	return v.Kind() == reflect.Array || v.Kind() == reflect.Slice
 }
 
 func (a *TableOutputFilter) FormatTable(rowPath string, colNames []string, v interface{}) (string, error) {
@@ -112,26 +119,82 @@ func (a *TableOutputFilter) FormatTable(rowPath string, colNames []string, v int
 		return "", fmt.Errorf("jmespath: '%s' failed Need Array Expr", rowPath)
 	}
 
+	// delete date type is struct
+	// 1 = object, 2 = array
+	dataType := 1
+	if len(rowsArray) > 0 {
+		_, ok := rowsArray[0].(map[string]interface{})
+		if !ok {
+			// check if it is an array
+			if isArrayOrSlice(rowsArray[0]) {
+				dataType = 2
+			}
+		}
+	}
+
+	colNamesArray := make([]string, 0)
+	colIndexArray := make([]int, 0)
+
+	if dataType == 2 {
+		// all colNames must be string:number format
+		for _, colName := range colNames {
+			// Num ignore
+			if colName == "Num" {
+				colNamesArray = append(colNamesArray, colName)
+				continue
+			}
+			if !strings.Contains(colName, ":") {
+				return "", fmt.Errorf("colNames: %s must be string:number format, like 'name:0', 0 is the array index", colName)
+			}
+			// split colName to name and number, must be two parts
+			parts := strings.Split(colName, ":")
+			if len(parts) != 2 {
+				return "", fmt.Errorf("colNames: %s must be string:number format, like 'name:0', 0 is the array index", colName)
+			}
+			// check if number is a number, use regex match
+			if !isNumber(parts[1]) {
+				return "", fmt.Errorf("colNames: %s must be string:number format, like 'name:0', 0 is the array index", colName)
+			}
+			colNamesArray = append(colNamesArray, parts[0])
+			num, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return "", fmt.Errorf("colNames: %s must be string:number format, like 'name:0', 0 is the array index", colName)
+			}
+			colIndexArray = append(colIndexArray, num)
+		}
+	}
+
 	var buf bytes.Buffer
 	writer := bufio.NewWriter(&buf)
 	format := strings.Repeat("%v\t ", len(colNames)-1) + "%v"
 	w := tabwriter.NewWriter(writer, 0, 0, 1, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, fmt.Sprintf(format, toIntfArray(colNames)...))
+	if dataType == 1 {
+		fmt.Fprintln(w, fmt.Sprintf(format, toIntfArray(colNames)...))
 
-	separator := ""
-	for i, colName := range colNames {
-		separator = separator + strings.Repeat("-", len(colName))
-		if i < len(colNames)-1 {
-			separator = separator + "\t "
+		separator := ""
+		for i, colName := range colNames {
+			separator = separator + strings.Repeat("-", len(colName))
+			if i < len(colNames)-1 {
+				separator = separator + "\t "
+			}
 		}
+
+		fmt.Fprintln(w, separator)
+	} else {
+		fmt.Fprintln(w, fmt.Sprintf(format, toIntfArray(colNamesArray)...))
+
+		separator := ""
+		for i, colNameArray := range colNamesArray {
+			separator = separator + strings.Repeat("-", len(colNameArray))
+			if i < len(colNamesArray)-1 {
+				separator = separator + "\t "
+			}
+		}
+
+		fmt.Fprintln(w, separator)
 	}
-	fmt.Fprintln(w, separator)
 
 	for i, row := range rowsArray {
-		rowIntf, ok := row.(interface{})
-		if !ok {
-			// fmt.Errorf("parse row to interface failed")
-		}
 		r := make([]string, 0)
 		var s string
 		var index int
@@ -142,16 +205,34 @@ func (a *TableOutputFilter) FormatTable(rowPath string, colNames []string, v int
 				index = 1
 			}
 		}
-		for _, colName := range colNames[index:] {
-			v, _ := jmespath.Search(colName, rowIntf)
-			s = fmt.Sprintf("%v", v)
-			r = append(r, s)
+		if dataType == 1 {
+			for _, colName := range colNames[index:] {
+				v, _ := jmespath.Search(colName, row)
+				s = fmt.Sprintf("%v", v)
+				r = append(r, s)
+			}
+		} else {
+			for _, colIndex := range colIndexArray {
+				v, _ := jmespath.Search(fmt.Sprintf("[%d]", colIndex), row)
+				s = fmt.Sprintf("%v", v)
+				r = append(r, s)
+			}
 		}
 		fmt.Fprintln(w, fmt.Sprintf(format, toIntfArray(r)...))
 	}
 	w.Flush()
 	writer.Flush()
 	return buf.String(), nil
+}
+
+func isNumber(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+
 }
 
 func toIntfArray(stringArray []string) []interface{} {
@@ -161,4 +242,11 @@ func toIntfArray(stringArray []string) []interface{} {
 		intfArray = append(intfArray, elem)
 	}
 	return intfArray
+}
+
+func UnquoteString(s string) string {
+	if strings.HasPrefix(s, "\"") && strings.HasSuffix(s, "\"") && len(s) >= 2 {
+		return s[1 : len(s)-1]
+	}
+	return s
 }

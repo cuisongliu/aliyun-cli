@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -104,4 +104,26 @@ func TestTableOutputFilter_FormatTable(t *testing.T) {
 	str, err = tableout.FormatTable(rowpath, colNames, v)
 	assert.Equal(t, "Num | name  | type  | api\n--- | ----  | ----  | ---\n0   | <nil> | <nil> | <nil>\n1   | <nil> | <nil> | <nil>\n", str)
 	assert.Nil(t, err)
+
+	// test array format
+	v = map[string]interface{}{
+		"User": []interface{}{
+			[]string{"test", "test2"},
+			[]string{"test3", "test4"},
+		},
+	}
+	colNames = []string{"name:0", "type:1"}
+	str, err = tableout.FormatTable(rowpath, colNames, v)
+	assert.Equal(t, "Num | name  | type\n--- | ----  | ----\n0   | test  | test2\n1   | test3 | test4\n", str)
+	assert.Nil(t, err)
+	// test array format
+	colNames = []string{"name", "type:1"}
+	str, err = tableout.FormatTable(rowpath, colNames, v)
+	assert.NotNil(t, err)
+	assert.Equal(t, "colNames: name must be string:number format, like 'name:0', 0 is the array index", err.Error())
+}
+
+func TestUnquoteString(t *testing.T) {
+	str := UnquoteString(`"nicai"`)
+	assert.Equal(t, "nicai", str)
 }

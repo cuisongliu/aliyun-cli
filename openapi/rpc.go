@@ -15,7 +15,7 @@ package openapi
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
@@ -37,6 +37,11 @@ func (a *RpcInvoker) Prepare(ctx *cli.Context) error {
 	request.ApiName = api.Name
 	request.Scheme = api.GetProtocol()
 	request.Method = api.GetMethod()
+
+	// if `--insecure` assigned, use http
+	if _, ok := InsecureFlag(ctx.Flags()).GetValue(); ok {
+		a.request.Scheme = "http"
+	}
 
 	// if `--secure` assigned, use https
 	if _, ok := SecureFlag(ctx.Flags()).GetValue(); ok {
@@ -102,7 +107,7 @@ func (a *RpcInvoker) Call() (*responses.CommonResponse, error) {
 
 func replaceValueWithFile(f *cli.Flag) {
 	value, _ := f.GetValue()
-	data, err := ioutil.ReadFile(value)
+	data, err := os.ReadFile(value)
 	if err != nil {
 		panic(err)
 	}

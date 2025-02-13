@@ -1,58 +1,71 @@
 package lib
 
 import (
-	"testing"
-
-	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/aliyun-cli/config"
+	"bytes"
+	"fmt"
+	"github.com/aliyun/aliyun-cli/cli"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestCliBridge(t *testing.T) {
 	NewCommandBridge(configCommand.command)
 }
-func TestGetSessionCredential(t *testing.T) {
-	profile := config.Profile{
-		Name:            "ramRoleArnProfile",
-		Mode:            "RamRoleArn",
-		AccessKeyId:     "yourAccessKeyId",
-		AccessKeySecret: "yourAccessKeySecret",
-		StsRegion:       "cn-hangzhou",
-		RamRoleArn:      "yourRamRoleArn",
-		RoleSessionName: "test",
-		ExpiredSeconds:  900,
-		RegionId:        "cn-hangzhou",
+
+func TestParseAndGetEndpoint(t *testing.T) {
+	type args struct {
+		ctx  *cli.Context
+		args []string
 	}
-	ak, sk, token, e := getSessionCredential(&profile, nil)
-	if e != nil {
-		assert.Error(t, e)
-	} else {
-		assert.NotNil(t, ak)
-		assert.NotNil(t, sk)
-		assert.NotNil(t, token)
+	w := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	context := cli.NewCommandContext(w, stderr)
+	flag := cli.Flag{
+		Name: "endpoint",
 	}
-	ak, sk, token, e = getSessionCredential(&profile, tea.String("http://127.0.0.1"))
-	if e != nil {
-		assert.Error(t, e)
-	} else {
-		assert.NotNil(t, ak)
-		assert.NotNil(t, sk)
-		assert.NotNil(t, token)
+	flag.SetValue("oss-cn-hangzhou.aliyuncs.com")
+	context.Flags().Add(&flag)
+
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "Valid endpoint from args",
+			args: args{
+				ctx:  new(cli.Context),
+				args: []string{"--endpoint", "oss-cn-shenzhen.aliyuncs.com"},
+			},
+			want:    "oss-cn-shenzhen.aliyuncs.com",
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Valid region from args",
+			args: args{
+				ctx:  new(cli.Context),
+				args: []string{"--region", "cn-shenzhen"},
+			},
+			want:    "oss-cn-shenzhen.aliyuncs.com",
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Fetch endpoint flag from context",
+			args: args{
+				ctx: context,
+			},
+			want:    "oss-cn-hangzhou.aliyuncs.com",
+			wantErr: assert.NoError,
+		},
 	}
-	ak, sk, token, e = getSessionCredential(&profile, tea.String("127.0.0.1:8089"))
-	if e != nil {
-		assert.EqualError(t, e, "refresh RoleArn sts token err: parse \"127.0.0.1:8089\": first path segment in URL cannot contain colon")
-	} else {
-		assert.NotNil(t, ak)
-		assert.NotNil(t, sk)
-		assert.NotNil(t, token)
-	}
-	ak, sk, token, e = getSessionCredential(&profile, tea.String("http://127.0.0.1:8089"))
-	if e != nil {
-		assert.Error(t, e)
-	} else {
-		assert.NotNil(t, ak)
-		assert.NotNil(t, sk)
-		assert.NotNil(t, token)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseAndGetEndpoint(tt.args.ctx, tt.args.args)
+			if !tt.wantErr(t, err, fmt.Sprintf("ParseAndGetEndpoint(%v, %v)", tt.args.ctx, tt.args.args)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "ParseAndGetEndpoint(%v, %v)", tt.args.ctx, tt.args.args)
+		})
 	}
 }

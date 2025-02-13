@@ -4,7 +4,6 @@ English | [简体中文](./README-CN.md)
 
 <p align="center">
 <a href="https://github.com/aliyun/aliyun-cli/actions/workflows/go.yml"><img src="https://github.com/aliyun/aliyun-cli/actions/workflows/go.yml/badge.svg" alt="Go build Status"></a>
-<a href="https://ci.appveyor.com/project/aliyun/aliyun-cli"><img src="https://ci.appveyor.com/api/projects/status/avxoqqcmgksbt3d8/branch/master?svg=true" alt="Appveyor Build Status"></a>
 <a href="https://codecov.io/gh/aliyun/aliyun-cli"><img src="https://codecov.io/gh/aliyun/aliyun-cli/branch/master/graph/badge.svg" alt="codecov"></a>
 <a href="https://github.com/aliyun/aliyun-cli/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aliyun/aliyun-cli.svg" alt="License"></a>
 <a href="https://goreportcard.com/report/github.com/aliyun/aliyun-cli"><img src="https://goreportcard.com/badge/github.com/aliyun/aliyun-cli" alt="Go Report" ></a>
@@ -19,7 +18,7 @@ The Alibaba Cloud CLI is an open source tool, you can get the latest version fro
 You can also try it out in the Cloud Shell before installing the CLI.
 
 <a href="https://shell.aliyun.com/" target="cloudshell">
-  <img src="https://img.alicdn.com/tfs/TB1wt1zq9zqK1RjSZFpXXakSXXa-1066-166.png" width="180" />
+  <img src="https://img.alicdn.com/tfs/TB1wt1zq9zqK1RjSZFpXXakSXXa-1066-166.png" width="180" alt="cloudshell" />
 </a>
 
 ## Introduction
@@ -30,7 +29,7 @@ The Alibaba Cloud CLI is a tool to manage and use Alibaba Cloud resources throug
 
 ## Troubleshoot
 
-[Troubleshoot](https://troubleshoot.api.aliyun.com/?source=github_sdk) Provide OpenAPI diagnosis service to help developers locate quickly and provide solutions for developers through `RequestID` or `error message`.
+[Troubleshoot](https://api.aliyun.com/troubleshoot?source=github_sdk) Provide OpenAPI diagnosis service to help developers locate quickly and provide solutions for developers through `RequestID` or `error message`.
 
 ## CLI Releases
 
@@ -42,7 +41,7 @@ The release notes for the CLI can be found in the [CHANGELOG](./CHANGELOG.md)
 
   Download the installer, then extract the installer. You can move the extracted `aliyun` executable file to the `/usr/local/bin` directory or add it to the `$PATH`.
 
-  Download link: (<img src="https://img.shields.io/github/release/aliyun/aliyun-cli.svg" alt="Latest Stable Version" />)
+  Download link: (![Latest Stable Version](https://img.shields.io/github/release/aliyun/aliyun-cli.svg))
 
   - [Mac GUI Installer](https://aliyuncli.alicdn.com/aliyun-cli-latest.pkg)
   - [Mac Universal](https://aliyuncli.alicdn.com/aliyun-cli-macosx-latest-universal.tgz)
@@ -64,14 +63,14 @@ brew install aliyun-cli
 You can paste the following command in a macOS Terminal or Linux shell prompt.
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/aliyun/aliyun-cli/HEAD/install.sh)"
+/bin/bash -c "$(curl -fsSL https://aliyuncli.alicdn.com/install.sh)"
 ```
 
 If you need detailed installation steps or compile the installation steps, please visit [Installation Guide](https://www.alibabacloud.com/help/zh/doc-detail/121988.html).
 
 ## Configure
 
-For detailed configuration instructions, please visit the official website [Configuration Alibaba Cloud CLI](https://www.alibabacloud.com/help/doc-detail/110341.htm?spm=a2c63.p38356.b99.12.77d468f5YJVFg1).
+For detailed configuration instructions, please visit the official website [Configuration Alibaba Cloud CLI](https://www.alibabacloud.com/help/doc-detail/110341.htm).
 
 Before using Alibaba Cloud CLI to invoke the services, you need to configure the credential information, region, language, etc.
 
@@ -93,12 +92,37 @@ You can specify the authentication method to use by using the `configure` comman
 
 The following are supported authentication methods:
 
-| Authentication methods | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
-| AK                     | Use AccessKey ID and Secret to access Alibaba Cloud services |
-| StsToken               | Use STS token to access Alibaba Cloud services               |
-| RamRoleArn             | Use the AssumeRole to access Alibaba Cloud services          |
-| EcsRamRole             | Use the EcsRamRole to access ECS resources                   |
+| Authentication methods | Description                                                 |
+|------------------------|-------------------------------------------------------------|
+| AK                     | Use direct AccessKey ID/Secret as access credentials        |
+| RamRoleArn             | Use RAM role assumption to provide access credentials       |
+| EcsRamRole             | Use ECS instance role to provide access credentials         |
+| OIDC                   | Use OIDC role assumption to provide access credentials      |
+| External               | Use external processes to provide access credentials        |
+| CredentialsURI         | Use external services to provide access credentials         |
+| ChainableRamRoleArn    | Use chainable role assumption to provide access credentials |
+
+If the --mode is not specified during configuration, the AK mode will be used by default.
+
+### RAM Sub-account Role Assumption
+
+You can specify obtaining credentials through RAM sub-account role assumption by using the --mode RamRoleArn. It works by exchanging temporary
+credentials through the AssumeRole method. An example is as follows:
+
+```shell
+$ aliyun configure --mode RamRoleArn --profile subaccount
+Configuring profile 'subaccount' in 'RamRoleArn' authenticate mode...
+Access Key Id []: AccessKey ID
+Access Key Secret []: AccessKey Secret
+Sts Region []: cn-hangzhou
+Ram Role Arn []: acs:ram::******:role/ecs-test
+Role Session Name []: sessionname
+Expired Seconds []: 900
+Default Region Id []: cn-hangzhou
+Default Output Format [json]: json (Only support json)
+Default Language [zh|en] en:
+Saving profile[subaccount] ...Done.
+```
 
 ### Use an external program to get credentials
 
@@ -112,7 +136,7 @@ Agreement：
 
 Key field:
 
-- mode: Specify the type of credentials returned
+- mode: Specifies the type of credentials returned, currently supports two types of static credentials.
 
 Example of the return of each credential type:
 
@@ -134,27 +158,6 @@ Example of the return of each credential type:
   "access_key_id": "accessKeyId",
   "access_key_secret": "accessKeySecret",
   "sts_token": "stsToken"
-}
-```
-
-- RamRoleArn
-
-```json
-{
-  "mode": "RamRoleArn",
-  "access_key_id": "accessKeyId",
-  "access_key_secret": "accessKeySecret",
-  "ram_role_arn": "ramRoleArn",
-  "ram_session_name": "ramSessionName"
-}
-```
-
-- EcsRamRole
-
-```json
-{
-  "mode": "EcsRamRole",
-  "ram_role_name": "ramRoleName"
 }
 ```
 
@@ -219,11 +222,28 @@ The Credentials URI must be response with status code 200, and following body:
   "AccessKeyId": "<ak id>",
   "AccessKeySecret": "<ak secret>",
   "SecurityToken": "<security token>",
-  "Expiration" "2006-01-02T15:04:05Z" // utc time
+  "Expiration": "2006-01-02T15:04:05Z" // utc time
 }
 ```
 
 Otherwise, CLI treate as failure case.
+
+### Use OIDC to get credentials
+
+You can use the `--mode OIDC` to obtain credentials through OIDC-based SSO role assumption. An example is as follows:
+
+```shell
+$ aliyun configure --mode OIDC --profile oidc_p
+Configuring profile 'oidc_p' in 'OIDC' authenticate mode...
+OIDC Provider ARN []: xxxx
+OIDC Token File []: xxx
+RAM Role ARN []: xxx
+Role Session Name []: xxx
+Default Region Id []: xxx
+Default Output Format [json]: json (Only support json)
+Default Language [zh|en] en: 
+Saving profile[oidc_p] ...Done.
+```
 
 ### Enable bash/zsh auto completion
 
@@ -403,15 +423,15 @@ When you input some argument like "-PortRange -1/-1", will cause parse error. In
 
 ## Supported environment variables
 
-We supported following environment variables:
+We support the following environment variables:
 
-- `ALIBABACLOUD_PROFILE`/`ALIBABA_CLOUD_PROFILE`/`ALICLOUD_PROFILE`: When `--profile` flag is not specified, CLI use it.
-- `ALIBABACLOUD_IGNORE_PROFILE=TRUE`: When this variable is specified, CLI ignores any configuration files.
-- `ALIBABACLOUD_ACCESS_KEY_ID`/`ALICLOUD_ACCESS_KEY_ID`/`ACCESS_KEY_ID`: When no any specified Access Key Id, CLI use it.
-- `ALIBABACLOUD_ACCESS_KEY_SECRET`/`ALICLOUD_ACCESS_KEY_SECRET`/`ACCESS_KEY_SECRET`: When no any specified Access Key Secret, CLI use it.
-- `ALIBABACLOUD_SECURITY_TOKEN`/`ALICLOUD_SECURITY_TOKEN`/`SECURITY_TOKEN`: When no any specified Security Token, CLI use it.
-- `ALIBABACLOUD_REGION_ID`/`ALICLOUD_REGION_ID`/`REGION`: When no any specified Region Id, CLI use it.
-- `DEBUG=sdk`：Through this variable, CLI display http request information. It helpful for troubleshooting.
+- `ALIBABA_CLOUD_PROFILE`: When the `--profile` flag is not specified, the CLI uses it.
+- `ALIBABA_CLOUD_IGNORE_PROFILE=TRUE`: When this variable is specified, the CLI ignores any configuration files.
+- `ALIBABA_CLOUD_ACCESS_KEY_ID`: When no Access Key Id is specified, the CLI uses it.
+- `ALIBABA_CLOUD_ACCESS_KEY_SECRET`: When no Access Key Secret is specified, the CLI uses it.
+- `ALIBABA_CLOUD_SECURITY_TOKEN`: When no Security Token is specified, the CLI uses it.
+- `ALIBABA_CLOUD_REGION_ID`: When no Region Id is specified, the CLI uses it.
+- `DEBUG=sdk`：Through this variable, the CLI can display HTTP request information, which is helpful for troubleshooting.
 
 ## Getting Help
 
